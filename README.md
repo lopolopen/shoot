@@ -18,3 +18,12 @@ go get -tool github.com/lopolopen/shoot@latest
 ```zsh
 go generate
 ```
+
+# TODO:
+- [ ] shoot new -getset -type=YourType
+- [ ] shoot new -opt|option -type=YourType
+- [ ] shoot new -json -type=YourType
+- [ ] shoot enum -str|string -type=YourEnum
+- [x] shoot enum -bit|bitwise -type=YourEnum
+- [ ] shoot enum -json -type=YourEnum
+- [ ] refactor: duplicated code
