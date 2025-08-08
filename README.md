@@ -1,6 +1,9 @@
 # shoot
 A pack of tools for "go generate".
 
+# Project status:
+PROVE OF CONCEPT. DON'T USE NOW!
+
 # How to use?
 ```zsh
 go get -tool github.com/lopolopen/shoot@latest
