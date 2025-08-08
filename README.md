@@ -27,3 +27,9 @@ go generate
 - [x] shoot enum -bit|bitwise -type=YourEnum
 - [ ] shoot enum -json -type=YourEnum
 - [ ] refactor: duplicated code
+
+# Inspiring projects
+* [stringer](https://pkg.go.dev/golang.org/x/tools/cmd/stringer)
+* [enumer](https://github.com/dmarkham/enumer)
+* [genapi](https://github.com/lexcao/genapi)
+* [Refit](https://github.com/reactiveui/refit)
