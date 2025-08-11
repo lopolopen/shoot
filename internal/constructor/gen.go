@@ -18,6 +18,9 @@ import (
 
 const SubCmd = "new"
 
+//go:embed constructor.tmpl
+var tmplTxt string
+
 type Data struct {
 	shoot.Meta
 	NewList        []string
@@ -26,22 +29,33 @@ type Data struct {
 	SetterList     []string
 }
 
-//go:embed constructor.tmpl
-var tmplTxt string
+type Flags struct {
+	TypeNames []string
+}
 
-func Gen() error {
-	var g shoot.Generator
-	dir := "."
+func parse(sub *flag.FlagSet) Flags {
+	typeNames := sub.String("type", "", "comma-separated list of type names")
+	sub.Parse(flag.Args()[1:])
+	return Flags{
+		TypeNames: strings.Split(*typeNames, ","),
+	}
+}
 
-	sub := flag.NewFlagSet(SubCmd, flag.ExitOnError)
+func usage(sub *flag.FlagSet) {
+	//TODO:
 	sub.Usage = func() {
 		log.Printf("Usage: %s %s [options]", shoot.Cmd, SubCmd)
 		log.Println()
 		sub.PrintDefaults()
 	}
-	typeNames := sub.String("type", "", "comma-separated list of type names")
-	sub.Parse(flag.Args()[1:])
-	typs := strings.Split(*typeNames, ",")
+}
+
+func Gen(sub *flag.FlagSet) error {
+	usage(sub)
+	flags := parse(sub)
+
+	var g shoot.Generator
+	dir := "."
 
 	tmpl, err := template.New(SubCmd).Funcs(template.FuncMap{
 		"camel":  transfer.ToCamelCase,
@@ -64,8 +78,8 @@ func Gen() error {
 	data := &Data{
 		Meta: shoot.Meta{
 			Cmd:         strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "),
-			PackageName: g.Pkg().Name,
-			TypeName:    typs[0],
+			PackageName: g.Pkg().Name(),
+			TypeName:    flags.TypeNames[0],
 		},
 		NewList: []string{
 			"name string",
@@ -99,7 +113,7 @@ func Gen() error {
 
 	// src := buff.Bytes()
 
-	name := strings.ToLower(fmt.Sprintf("%s_%s_%s.go", typs[0], shoot.Cmd, SubCmd))
+	name := strings.ToLower(fmt.Sprintf("%s_%s_%s.go", data.TypeName, shoot.Cmd, SubCmd))
 	output := filepath.Join(dir, name)
 
 	outFile, err := os.Create(output)

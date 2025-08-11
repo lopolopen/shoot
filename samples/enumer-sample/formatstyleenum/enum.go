@@ -6,7 +6,7 @@ type Enum int
 
 const (
 	None Enum = 0
-	Bold Enum = 1 << iota
+	Bold Enum = 1
 	Italic
 	Underline
 	Strikethrough

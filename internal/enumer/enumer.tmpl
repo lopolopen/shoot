@@ -2,6 +2,20 @@
 
 package {{.PackageName}}
 
+{{if .String}}
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+{{end}}
+
+{{if .String}}
+{{.NoChangeGuard}}
+
+{{.NameIndexDecl}}
+{{end}}
+
 {{if .Bitwise}}
 // Has checks if a specific flag is present in the Enum set.
 func ({{firstL $.TypeName}} {{.TypeName}}) Has(flag {{.TypeName}}) bool {
@@ -18,3 +32,8 @@ func ({{firstL $.TypeName}} {{.TypeName}}) Remove(flag {{.TypeName}}) {{.TypeNam
 	return {{firstL $.TypeName}} &^ flag 
 }
 {{end}}
+
+{{/*
+e_ -> {{firstL $.TypeName}}
+Enum -> {{.TypeName}}
+*/}}

@@ -1,16 +1,12 @@
 package enumer
 
 import (
-	"bytes"
 	_ "embed"
 	"flag"
 	"fmt"
-	"go/format"
-	"html/template"
-	"log"
-	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/lopolopen/shoot/shoot"
 	"github.com/lopolopen/shoot/shoot/transfer"
@@ -18,26 +14,64 @@ import (
 
 const SubCmd = "enum"
 
-type Data struct {
-	shoot.Meta
-	Bitwise bool
-}
-
 //go:embed enumer.tmpl
 var tmplTxt string
 
-func Gen() error {
+type Data struct {
+	shoot.Meta
+	String        bool
+	NoChangeGuard string
+	NameIndexDecl string
+	Bitwise       bool
+	ValueNames    []string
+}
+
+type Flags struct {
+	TypeNames []string
+	String    bool
+	Bitwise   bool
+}
+
+func parse(sub *flag.FlagSet) Flags {
+	str := sub.Bool("str", false, "generate String() method for the type (alias for -string)")
+	string := sub.Bool("string", false, "generate String() method for the type")
+	bit := sub.Bool("bit", false, "generate bitwise enumerations (alias for -bitwise)")
+	bitwise := sub.Bool("bitwise", false, "generate bitwise enumerations")
+	typeNames := sub.String("type", "", "comma-separated list of type names")
+
+	sub.Parse(flag.Args()[1:])
+	return Flags{
+		TypeNames: strings.Split(*typeNames, ","),
+		String:    *string || *str,
+		Bitwise:   *bitwise || *bit,
+	}
+}
+
+func Gen(sub *flag.FlagSet) error {
+	flags := parse(sub)
 	var g shoot.Generator
 	dir := "."
 
-	sub := flag.NewFlagSet(SubCmd, flag.ExitOnError)
-	typeNames := sub.String("type", "", "comma-separated list of type names")
-	bitwise := sub.Bool("bit", false, "generate bitwise enumerations")
-	sub.Parse(flag.Args()[1:])
-	typs := strings.Split(*typeNames, ",")
-	log.Println("Type names:", typs)
+	g.ParsePackage([]string{dir}, []string{})
 
-	tmpl, err := template.New(SubCmd).Funcs(template.FuncMap{
+	// index, name := createIndexAndNameDecl(g.Pkg().Files()[0].Values(), flags.TypeNames[0], "")
+
+	data := &Data{
+		Meta: shoot.Meta{
+			Cmd:         strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "),
+			PackageName: g.Pkg().Name(),
+			TypeName:    flags.TypeNames[0],
+		},
+		String:        flags.String,
+		NoChangeGuard: "",
+		// NameIndexDecl: fmt.Sprintf("const %s\n%s", name, index),
+		Bitwise: flags.Bitwise,
+	}
+
+	fileName := strings.ToLower(fmt.Sprintf("%s_%s_%s.go", data.TypeName, shoot.Cmd, SubCmd))
+	output := filepath.Join(dir, fileName)
+
+	funcs := template.FuncMap{
 		"camel":  transfer.ToCamelCase,
 		"pascal": transfer.ToPascalCase,
 		"firstL": transfer.FirtLower,
@@ -48,47 +82,18 @@ func Gen() error {
 			}
 			return m[name]
 		},
-	}).Parse(tmplTxt)
-	if err != nil {
-		log.Fatalf("parsing template: %s", err)
 	}
+	shoot.Render(dir, output, SubCmd, tmplTxt, funcs, data)
 
-	g.ParsePackage([]string{dir}, []string{})
-
-	data := &Data{
-		Meta: shoot.Meta{
-			Cmd:         strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "),
-			PackageName: g.Pkg().Name,
-			TypeName:    typs[0],
-		},
-		Bitwise: *bitwise,
-	}
-
-	var buff bytes.Buffer
-	err = tmpl.Execute(&buff, data)
-	if err != nil {
-		log.Fatalf("executing template: %s", err)
-	}
-
-	src, err := format.Source(buff.Bytes())
-	if err != nil {
-		log.Fatalf("format source: %s", err)
-	}
-
-	// src := buff.Bytes()
-
-	name := strings.ToLower(fmt.Sprintf("%s_%s_%s.go", typs[0], shoot.Cmd, SubCmd))
-	output := filepath.Join(dir, name)
-
-	outFile, err := os.Create(output)
-	if err != nil {
-		log.Fatalf("creating output file: %s", err)
-	}
-	defer outFile.Close()
-	_, err = outFile.Write(src)
-	if err != nil {
-		log.Fatal()
-	}
+	// outFile, err := os.Create(output)
+	// if err != nil {
+	// 	log.Fatalf("creating output file: %s", err)
+	// }
+	// defer outFile.Close()
+	// _, err = outFile.Write(src)
+	// if err != nil {
+	// 	log.Fatal()
+	// }
 
 	return nil
 }

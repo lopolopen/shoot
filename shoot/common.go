@@ -8,10 +8,9 @@ import (
 const Cmd = "shoot"
 
 type Meta struct {
-	Cmd               string
-	PackageName       string
-	TypeName          string
-	TypeNameCamelCase string
+	Cmd         string
+	PackageName string
+	TypeName    string
 }
 
 func ToCamelCase(s string) string {

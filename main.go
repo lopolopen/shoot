@@ -30,11 +30,12 @@ func main() {
 	}
 
 	subCmd := flag.Args()[0]
+	sub := flag.NewFlagSet(subCmd, flag.ExitOnError)
 	switch subCmd {
 	case enumer.SubCmd:
-		enumer.Gen()
+		enumer.Gen(sub)
 	case constructor.SubCmd:
-		constructor.Gen()
+		constructor.Gen(sub)
 	default:
 		flag.Usage()
 		os.Exit(2)

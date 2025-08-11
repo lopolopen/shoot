@@ -24,6 +24,10 @@ type Value struct {
 	str    string // The string representation given by the "go/exact" package.
 }
 
+func (v Value) Name() string {
+	return v.name
+}
+
 // File holds a single parsed file and associated data.
 type File struct {
 	pkg  *Package  // Package to which this file belongs.
@@ -35,13 +39,33 @@ type File struct {
 	lineComment bool
 }
 
+func (f *File) Values() []Value {
+	return f.values
+}
+
+func (f *File) LineComment() bool {
+	return f.lineComment
+}
+
 // Package holds information about a Go package
 type Package struct {
 	dir      string
-	Name     string
-	Defs     map[*ast.Ident]types.Object
-	Files    []*File
+	name     string
+	defs     map[*ast.Ident]types.Object
+	files    []*File
 	typesPkg *types.Package
+}
+
+func (p *Package) Name() string {
+	return p.name
+}
+
+func (p *Package) Defs() map[*ast.Ident]types.Object {
+	return p.defs
+}
+
+func (p *Package) Files() []*File {
+	return p.files
 }
 
 // Generator holds the state of the analysis. Primarily used to buffer
@@ -58,8 +82,6 @@ func (g *Generator) Pkg() *Package {
 // parsePackage analyzes the single package constructed from the patterns and tags.
 // parsePackage exits if there is an error.
 func (g *Generator) ParsePackage(patterns []string, tags []string) {
-	fmt.Println("Parsing package in patterns:", patterns)
-	fmt.Println("  with tags:", tags)
 	cfg := &packages.Config{
 		Mode: packages.LoadSyntax,
 		// TODO: Need to think about constants in test files. Maybe write type_string_test.go
@@ -74,19 +96,19 @@ func (g *Generator) ParsePackage(patterns []string, tags []string) {
 		log.Fatalf("error: %d packages found", len(pkgs))
 		fmt.Println(pkgs)
 	}
-	g.AddPackage(pkgs[0])
+	g.addPackage(pkgs[0])
 }
 
 // addPackage adds a type checked Package and its syntax files to the generator.
-func (g *Generator) AddPackage(pkg *packages.Package) {
+func (g *Generator) addPackage(pkg *packages.Package) {
 	g.pkg = &Package{
-		Name:  pkg.Name,
-		Defs:  pkg.TypesInfo.Defs,
-		Files: make([]*File, len(pkg.Syntax)),
+		name:  pkg.Name,
+		defs:  pkg.TypesInfo.Defs,
+		files: make([]*File, len(pkg.Syntax)),
 	}
 
 	for i, file := range pkg.Syntax {
-		g.pkg.Files[i] = &File{
+		g.pkg.files[i] = &File{
 			file: file,
 			pkg:  g.pkg,
 		}
