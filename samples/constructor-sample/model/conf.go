@@ -1,6 +1,6 @@
 package model
 
-//go:generate go tool shoot new -opt -type=Conf
+//go:generate go tool shoot new -type=Conf
 
 //go:generate go tool shoot new -opt -type=Conf2
 
@@ -11,6 +11,7 @@ type Conf struct {
 	port int
 }
 
+// shoot: ignore
 type Conf2 struct {
 	//shoot: new
 	name string

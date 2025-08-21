@@ -18,21 +18,21 @@ func (c *Conf2) With(opts ..._opt_[Conf2, *Conf2]) *Conf2 {
 	return c
 }
 
-func NameOfConf2(name string) _opt_[Conf2, *Conf2] {
+func NameOfConf2(name_ string) _opt_[Conf2, *Conf2] {
 	return func(c *Conf2) {
-		c.name = name
+		c.name = name_
 	}
 }
 
-func HostOfConf2(host string) _opt_[Conf2, *Conf2] {
+func HostOfConf2(host_ string) _opt_[Conf2, *Conf2] {
 	return func(c *Conf2) {
-		c.host = host
+		c.host = host_
 	}
 }
 
-func PortOfConf2(port int) _opt_[Conf2, *Conf2] {
+func PortOfConf2(port_ int) _opt_[Conf2, *Conf2] {
 	return func(c *Conf2) {
-		c.port = port
+		c.port = port_
 	}
 }
 

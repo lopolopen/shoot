@@ -7,7 +7,6 @@ import (
 )
 
 const Cmd = "shoot"
-const FilePrefix = "0"
 
 type BaseData struct {
 	Cmd         string

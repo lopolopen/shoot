@@ -41,28 +41,28 @@ func (u *User) Tel() string {
 }
 
 // SetId sets the value of field id
-func (u *User) SetId(id string) {
-	u.id = id
+func (u *User) SetId(id_ string) {
+	u.id = id_
 }
 
 // SetName sets the value of field name
-func (u *User) SetName(name string) {
-	u.name = name
+func (u *User) SetName(name_ string) {
+	u.name = name_
 }
 
 // SetGender sets the value of field gender
-func (u *User) SetGender(gender int) {
-	u.gender = gender
+func (u *User) SetGender(gender_ int) {
+	u.gender = gender_
 }
 
 // SetAge sets the value of field age
-func (u *User) SetAge(age int) {
-	u.age = age
+func (u *User) SetAge(age_ int) {
+	u.age = age_
 }
 
 // SetTel sets the value of field tel
-func (u *User) SetTel(tel string) {
-	u.tel = tel
+func (u *User) SetTel(tel_ string) {
+	u.tel = tel_
 }
 
 type _User_marshal struct {

@@ -2,6 +2,11 @@
 
 package {{.PackageName}}
 
+{{if .Imports}}
+import (
+	{{.Imports}}
+)
+{{end}}
 {{if .Json}}
 import "encoding/json"
 {{end}}
@@ -24,9 +29,9 @@ func ({{firstLower .TypeName}} *{{.TypeName}})With(opts ..._opt_[{{.TypeName}}, 
 }
 
 {{range .AllList}}
-func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}} {{typeof .}})_opt_[{{$.TypeName}}, *{{$.TypeName}}] {
+func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}}_ {{typeof .}})_opt_[{{$.TypeName}}, *{{$.TypeName}}] {
 	 return func({{firstLower $.TypeName}} *{{$.TypeName}}) {
-        {{firstLower $.TypeName}}.{{.}} = {{camelCase .}} 
+        {{firstLower $.TypeName}}.{{.}} = {{camelCase .}}_ 
     }
 }
 {{end}}
@@ -48,8 +53,8 @@ func ({{firstLower $.TypeName}} *{{$.TypeName}}){{pascalCase .}}() {{typeof .}} 
 
 {{range .SetterList}}
 // Set{{pascalCase .}} sets the value of field {{.}}
-func ({{firstLower $.TypeName}} *{{$.TypeName}})Set{{pascalCase .}}({{.}} {{typeof .}}) {
-	{{firstLower $.TypeName}}.{{.}} = {{.}}
+func ({{firstLower $.TypeName}} *{{$.TypeName}})Set{{pascalCase .}}({{.}}_ {{typeof .}}) {
+	{{firstLower $.TypeName}}.{{.}} = {{.}}_
 }
 {{end}}
 {{end}}
