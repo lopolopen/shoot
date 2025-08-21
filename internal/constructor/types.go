@@ -10,6 +10,8 @@ import (
 
 type Data struct {
 	shoot.BaseData
+	GoFile  string
+	Imports string
 	//All = Exported + Unexported
 	AllList     []string
 	NewList     []string

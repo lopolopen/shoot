@@ -7,10 +7,9 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
-	"go/parser"
-	"go/token"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
@@ -47,14 +46,21 @@ func (g *Generator) ParseFlags() {
 	opt := sub.Bool("opt", false, "generate functional option pattern constructor (alias for -option)")
 	verbose := sub.Bool("v", false, "verbose outpot for debug")
 
+	var typNames []string
 	sub.Parse((flag.Args()[1:]))
 	if (*typeNames) == "" {
-		sub.Usage()
-		os.Exit(2)
+		gofile := sub.Arg(0)
+		if !strings.HasSuffix(gofile, ".go") {
+			sub.Usage()
+			os.Exit(2)
+		}
+		g.data.GoFile = gofile
+	} else {
+		typNames = strings.Split(*typeNames, ",")
 	}
 
 	g.flags = &Flags{
-		typeNames: strings.Split(*typeNames, ","),
+		typeNames: typNames,
 		getset:    *getset,
 		json:      *json,
 		opt:       *opt,
@@ -63,11 +69,20 @@ func (g *Generator) ParseFlags() {
 }
 
 func (g *Generator) Generate() map[string][]byte {
-	g.parsePackage([]string{"."}, []string{"."})
+	pat := g.data.GoFile
+	if pat == "" {
+		pat = "."
+	}
+
+	g.parsePackage([]string{pat})
 
 	g.data.BaseData = shoot.BaseData{
 		Cmd:         strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "),
 		PackageName: g.pkg.name,
+	}
+
+	if len(g.flags.typeNames) == 0 {
+		g.parseTypeNames()
 	}
 
 	srcMap := make(map[string][]byte)
@@ -75,26 +90,17 @@ func (g *Generator) Generate() map[string][]byte {
 		srcMap[typName] = g.generate(typName)
 	}
 	if g.data.Option {
-		srcMap["_opt_"] = g.generateOpt()
+		srcMap["@new_opt"] = g.generateOpt()
 	}
 	return srcMap
 }
 
 // parsePackage analyzes the single package constructed from the patterns and tags.
 // parsePackage exits if there is an error.
-func (g *Generator) parsePackage(patterns []string, tags []string) {
+func (g *Generator) parsePackage(patterns []string) {
 	cfg := &packages.Config{
 		Mode:  packages.LoadSyntax,
 		Tests: false,
-		Fset:  token.NewFileSet(),
-		ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
-			return parser.ParseFile(fset, filename, src, parser.ParseComments)
-		},
-		// 关键：禁止用 export data，强制读源码
-		Overlay: nil, // 确保不被替换
-		Env: append(os.Environ(),
-			"GOPACKAGESDRIVER=off", // 禁用外部 driver
-		),
 	}
 	pkgs, err := packages.Load(cfg, patterns...)
 	if err != nil {
@@ -102,7 +108,6 @@ func (g *Generator) parsePackage(patterns []string, tags []string) {
 	}
 	if len(pkgs) != 1 {
 		log.Fatalf("error: %d packages found", len(pkgs))
-		fmt.Println(pkgs)
 	}
 
 	g.addPackage(pkgs[0])
@@ -138,11 +143,20 @@ func (g *Generator) generate(typeName string) []byte {
 }
 
 func (g *Generator) FileName(typeName string) string {
-	fileName := strings.ToLower(fmt.Sprintf("%s_%s_%s", shoot.FilePrefix, SubCmd, typeName))
-	if ast.IsExported(typeName) || strings.HasPrefix(typeName, "_") {
-		return fileName + ".go"
+	prefix := shoot.Cmd
+	postfix := ""
+	if strings.HasPrefix(typeName, "@") {
+		typeName = typeName[1:]
+	} else {
+		if !strings.HasPrefix(typeName, "_") {
+			prefix = getGoFile(g.pkg.pkg, typeName)
+		}
+		if !ast.IsExported(typeName) {
+			postfix = "_x"
+		}
 	}
-	return fileName + "_.go"
+	fileName := strings.ToLower(fmt.Sprintf("%s_%s%s", prefix, typeName, postfix))
+	return fmt.Sprintf("%s.go", fileName)
 }
 
 // addPackage adds a type checked Package and its syntax files to the generator.
@@ -160,4 +174,29 @@ func (g *Generator) addPackage(pkg *packages.Package) {
 			pkg:  g.pkg,
 		}
 	}
+}
+
+func getGoFile(pkg *packages.Package, typeName string) string {
+	for _, obj := range pkg.TypesInfo.Defs {
+		if obj != nil && obj.Name() == typeName {
+			pos := pkg.Fset.Position(obj.Pos())
+			return filepath.Base(pos.Filename)
+		}
+	}
+	return ""
+}
+
+func (g *Generator) parseTypeNames() {
+	var typeNames []string
+	for _, f := range g.pkg.files {
+		ast.Inspect(f.file, func(n ast.Node) bool {
+			ts, ok := n.(*ast.TypeSpec)
+			if !ok {
+				return true
+			}
+			typeNames = append(typeNames, ts.Name.Name)
+			return false
+		})
+	}
+	g.flags.typeNames = typeNames
 }
