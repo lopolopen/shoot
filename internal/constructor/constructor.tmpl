@@ -61,12 +61,16 @@ func ({{firstLower $.TypeName}} *{{$.TypeName}})Set{{pascalCase .}}({{.}}_ {{typ
 
 {{if .Json}}
 type _{{.TypeName}}_marshal struct { {{range .GetterList}}
+	{{range $.EmbedList}}{{if (xof .)}}{{xof .}}.{{end}}{{.}}
+	{{end}}
 	{{pascalCase .}} {{typeof .}}{{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{end}}
-	{{range .ExportedList}} {{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}
+	{{range $.ExportedList}} {{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}
 	{{end}}
 }
 
 type _{{.TypeName}}_unmarshal struct { {{range .SetterList}}
+	{{range $.EmbedList}}{{if (xof .)}}{{xof .}}.{{end}}{{.}}
+	{{end}}
 	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{end}}
 	{{range .ExportedList}}{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}
 	{{end}}
@@ -74,8 +78,11 @@ type _{{.TypeName}}_unmarshal struct { {{range .SetterList}}
 
 // MarshalJSON serializes type {{.TypeName}} to json bytes
 func ({{firstLower .TypeName}} {{.TypeName}})MarshalJSON()([]byte, error) {
-	data := _{{.TypeName}}_marshal{ {{range .GetterList}}
-		{{pascalCase .}}: {{firstLower $.TypeName}}.{{pascalCase .}}(),{{end}}
+	data := _{{.TypeName}}_marshal{ 
+		{{range .EmbedList}}{{.}}: {{firstLower $.TypeName}}.{{.}},
+		{{end}}
+		{{range .GetterList}}{{pascalCase .}}: {{firstLower $.TypeName}}.{{pascalCase .}}(),
+		{{end}}
 		{{range .ExportedList}}{{.}}: {{firstLower $.TypeName}}.{{.}},
 		{{end}}
 	}
@@ -88,8 +95,10 @@ func ({{firstLower .TypeName}} *{{.TypeName}})UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &{{camelCase .TypeName}}_); err != nil {
 		return nil
 	}
-	{{range .SetterList}}
-	{{firstLower $.TypeName}}.Set{{pascalCase .}}({{camelCase $.TypeName}}_.{{pascalCase .}}){{end}}
+	{{range .SetterList}}{{firstLower $.TypeName}}.Set{{pascalCase .}}({{camelCase $.TypeName}}_.{{pascalCase .}})
+	{{end}}
+	{{range .EmbedList}}{{firstLower $.TypeName}}.{{.}} = {{camelCase $.TypeName}}_.{{.}}
+	{{end}}
 	{{range .ExportedList}}{{firstLower $.TypeName}}.{{.}} = {{camelCase $.TypeName}}_.{{.}}
 	{{end}} return nil
 }

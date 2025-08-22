@@ -51,6 +51,7 @@ type _B_unmarshal struct {
 // MarshalJSON serializes type B to json bytes
 func (b B) MarshalJSON() ([]byte, error) {
 	data := _B_marshal{
+
 		B: b.B(),
 	}
 	return json.Marshal(data)
@@ -62,7 +63,7 @@ func (b *B) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &b_); err != nil {
 		return nil
 	}
-
 	b.SetB(b_.B)
+
 	return nil
 }

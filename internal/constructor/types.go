@@ -24,6 +24,7 @@ type Data struct {
 	//Marshal: Getteer + Exported
 	//Unmarshal: Setter + Exported
 	ExportedList []string
+	EmbedList    []string
 }
 
 type Flags struct {

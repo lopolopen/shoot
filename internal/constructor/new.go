@@ -7,14 +7,21 @@ import (
 	"go/token"
 	"log"
 	"regexp"
+
+	"github.com/lopolopen/shoot/internal"
 )
 
 func (g *Generator) makeNew(typeName string) {
+	g.data.Register("typeof", internal.ID)
+	g.data.Register("xof", internal.ID)
+
 	var imports string
 	var allList []string
 	var unexportedList []string
 	var newList []string
+	var embedList []string
 	typeMap := make(map[string]string)
+	xMap := make(map[string]string)
 
 	for _, f := range g.pkg.files {
 		ast.Inspect(f.file, func(n ast.Node) bool {
@@ -34,6 +41,13 @@ func (g *Generator) makeNew(typeName string) {
 			}
 
 			for _, field := range st.Fields.List {
+				if len(field.Names) == 0 {
+					xMap = parseEmbedField(field)
+					for typ := range xMap {
+						embedList = append(embedList, typ)
+					}
+				}
+
 				for _, name := range field.Names {
 					if name.Obj.Kind != ast.Var {
 						continue
@@ -74,9 +88,13 @@ func (g *Generator) makeNew(typeName string) {
 	} else {
 		g.data.NewList = unexportedList
 	}
+	g.data.EmbedList = embedList
 
 	g.data.Register("typeof", func(key string) string {
 		return typeMap[key]
+	})
+	g.data.Register("xof", func(key string) string {
+		return xMap[key]
 	})
 }
 
@@ -108,6 +126,21 @@ func exprString(fset *token.FileSet, expr ast.Expr) string {
 		log.Fatalf("print expr: %s", err)
 	}
 	return buf.String()
+}
+
+func parseEmbedField(file *ast.Field) map[string]string {
+	selMap := make(map[string]string)
+	if len(file.Names) == 0 {
+		switch t := file.Type.(type) {
+		case *ast.SelectorExpr:
+			if pkgIdent, ok := t.X.(*ast.Ident); ok {
+				selMap[t.Sel.Name] = pkgIdent.Name
+			}
+		case *ast.Ident:
+			selMap[t.Name] = ""
+		}
+	}
+	return selMap
 }
 
 // func stripPkgPrefix(t types.Type) string {

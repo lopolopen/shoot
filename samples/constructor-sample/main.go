@@ -4,17 +4,18 @@ import (
 	"constructorsample/model"
 	"encoding/json"
 	"fmt"
-	"regexp"
 )
 
-func main() {
-	doc := "shoot: default=\"80\";"
-	regDef := regexp.MustCompile(`(?im)^shoot:.*?\Wdef(ault)?=([^;]+)(;.*|\s*)$`)
-	ms := regDef.FindStringSubmatch(doc)
-	for _, m := range ms {
-		fmt.Println(m)
-	}
+type Base struct {
+	Name string `json:"name"`
+}
 
+type Son struct {
+	Base
+	Name string `json:"name"`
+}
+
+func main() {
 	user := model.NewUser("11", "Tom", 0, 21, "123456")
 	fmt.Printf("%+v\n", user)
 
@@ -43,4 +44,14 @@ func main() {
 	//only init with default values
 	conf2 = new(model.Conf2).With()
 	fmt.Printf("%+v\n", conf2)
+
+	son := Son{
+		Name: "s",
+		Base: Base{
+			Name: "b",
+		},
+	}
+	sonJ, _ := json.Marshal(son)
+	fmt.Println(string(sonJ))
+	fmt.Println(son.Name)
 }

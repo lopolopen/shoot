@@ -3,12 +3,11 @@
 package model
 
 import (
-	dto "constructorsample/dto"
-	dto2 "constructorsample/model/dto"
+	"constructorsample/model/dto"
 )
 
 // NewBook constructs a new instance of type Book
-func NewBook(name string, names []string, nameMap map[string]string, userMap map[string]User, owner *User, c *dto.Class, c2 *dto2.Class) *Book {
+func NewBook(name string, names []string, nameMap map[string]string, userMap map[string]User, owner *User, c *dto.Class) *Book {
 	return &Book{
 		name:    name,
 		names:   names,
@@ -16,6 +15,5 @@ func NewBook(name string, names []string, nameMap map[string]string, userMap map
 		userMap: userMap,
 		owner:   owner,
 		c:       c,
-		c2:      c2,
 	}
 }

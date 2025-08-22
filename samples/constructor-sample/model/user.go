@@ -1,9 +1,6 @@
 package model
 
-import (
-	dto "constructorsample/dto"
-	dto2 "constructorsample/model/dto"
-)
+import "constructorsample/model/dto"
 
 //go:generate go tool shoot new -getset -json -type=User
 
@@ -24,7 +21,6 @@ type Book struct {
 	userMap map[string]User
 	owner   *User
 	c       *dto.Class
-	c2      *dto2.Class
 }
 
 //go:generate go tool shoot new -getset -json -type=Book2
