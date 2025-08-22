@@ -44,20 +44,25 @@ func (b *Book2) SetOwner(owner_ *User) {
 }
 
 type _Book2_marshal struct {
-	Name  string   `json:"name"`
+	Name string `json:"name"`
+
 	Names []string `json:"names"`
-	Owner *User    `json:"owner"`
+
+	Owner *User `json:"owner"`
 }
 
 type _Book2_unmarshal struct {
-	Name  string   `json:"name"`
+	Name string `json:"name"`
+
 	Names []string `json:"names"`
-	Owner *User    `json:"owner"`
+
+	Owner *User `json:"owner"`
 }
 
 // MarshalJSON serializes type Book2 to json bytes
 func (b Book2) MarshalJSON() ([]byte, error) {
 	data := _Book2_marshal{
+
 		Name:  b.Name(),
 		Names: b.Names(),
 		Owner: b.Owner(),
@@ -71,9 +76,9 @@ func (b *Book2) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &book2_); err != nil {
 		return nil
 	}
-
 	b.SetName(book2_.Name)
 	b.SetNames(book2_.Names)
 	b.SetOwner(book2_.Owner)
+
 	return nil
 }

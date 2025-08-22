@@ -66,24 +66,33 @@ func (u *User) SetTel(tel_ string) {
 }
 
 type _User_marshal struct {
-	Id     string `json:"id"`
-	Name   string `json:"name"`
-	Gender int    `json:"gender"`
-	Age    int    `json:"age"`
-	Tel    string `json:"tel"`
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Gender int `json:"gender"`
+
+	Age int `json:"age"`
+
+	Tel string `json:"tel"`
 }
 
 type _User_unmarshal struct {
-	Id     string `json:"id"`
-	Name   string `json:"name"`
-	Gender int    `json:"gender"`
-	Age    int    `json:"age"`
-	Tel    string `json:"tel"`
+	Id string `json:"id"`
+
+	Name string `json:"name"`
+
+	Gender int `json:"gender"`
+
+	Age int `json:"age"`
+
+	Tel string `json:"tel"`
 }
 
 // MarshalJSON serializes type User to json bytes
 func (u User) MarshalJSON() ([]byte, error) {
 	data := _User_marshal{
+
 		Id:     u.Id(),
 		Name:   u.Name(),
 		Gender: u.Gender(),
@@ -99,11 +108,11 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &user_); err != nil {
 		return nil
 	}
-
 	u.SetId(user_.Id)
 	u.SetName(user_.Name)
 	u.SetGender(user_.Gender)
 	u.SetAge(user_.Age)
 	u.SetTel(user_.Tel)
+
 	return nil
 }
