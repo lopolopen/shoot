@@ -47,10 +47,9 @@ func main() {
 	g.ParseFlags()
 	srcMap := g.Generate()
 	var fileNames []string
-	for typName, src := range srcMap {
-		fileName := g.FileName(typName)
-		fileNames = append(fileNames, fileName)
-		notedownSrc(fileName, src)
+	for fname, src := range srcMap {
+		notedownSrc(fname, src)
+		fileNames = append(fileNames, fname)
 	}
 
 	log.Println("go generate successfully:")

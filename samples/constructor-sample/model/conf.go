@@ -1,8 +1,6 @@
 package model
 
-//go:generate go tool shoot new -type=Conf
-
-//go:generate go tool shoot new -opt -type=Conf2
+//go:generate go tool shoot new -opt -file=$GOFILE
 
 type Conf struct {
 	//error: //shoot: def="1"

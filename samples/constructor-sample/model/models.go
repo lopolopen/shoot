@@ -1,6 +1,6 @@
 package model
 
-//go:generate go tool shoot new -getset -opt -json $GOFILE
+//go:generate go tool shoot new -getset -opt -json -file=$GOFILE
 
 type A struct {
 	a string
