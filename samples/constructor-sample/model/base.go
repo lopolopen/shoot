@@ -1,10 +1,8 @@
 package model
 
-import (
-	dto2 "constructorsample/model/dto"
-)
+import "constructorsample/model/dto"
 
-//go:generate go tool shoot new -getset -json -v $GOFILE
+//go:generate go tool shoot new -getset -json -file=$GOFILE
 
 type Base struct {
 	id int
@@ -13,6 +11,6 @@ type Base struct {
 type Son struct {
 	Base //todo
 	name string
-	dto2.Class
+	dto.Class
 	// dto.Class
 }

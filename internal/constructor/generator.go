@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/format"
+	"go/parser"
+	"go/token"
 	"log"
 	"os"
 	"path/filepath"
@@ -41,35 +43,44 @@ func New() *Generator {
 func (g *Generator) ParseFlags() {
 	sub := flag.NewFlagSet(SubCmd, flag.ExitOnError)
 	typeNames := sub.String("type", "", "comma-separated list of type names")
+	fileName := sub.String("file", "", "the targe go file to generate, typical value: $GOFILE")
 	getset := sub.Bool("getset", false, "generate Get/Set method for the type")
 	json := sub.Bool("json", false, "generate MarshalJSON/UnmarshalJSON method for the type")
+	option := sub.Bool("option", false, "generate functional option pattern constructor")
 	opt := sub.Bool("opt", false, "generate functional option pattern constructor (alias for -option)")
-	verbose := sub.Bool("v", false, "verbose outpot for debug")
+	separate := sub.Bool("separate", false, "each type has its own go file")
+	s := sub.Bool("s", false, "each type has its own go file (alias for -separate)")
+	verbose := sub.Bool("verbose", false, "verbose output")
+	v := sub.Bool("v", false, "verbose output (alias for -separate)")
+
+	sub.Parse((flag.Args()[1:]))
+
+	if *typeNames == "" && *fileName == "" {
+		sub.Usage()
+		os.Exit(2)
+	}
 
 	var typNames []string
-	sub.Parse((flag.Args()[1:]))
-	if (*typeNames) == "" {
-		gofile := sub.Arg(0)
-		if !strings.HasSuffix(gofile, ".go") {
-			sub.Usage()
-			os.Exit(2)
-		}
-		g.data.GoFile = gofile
-	} else {
+	if *typeNames != "" {
 		typNames = strings.Split(*typeNames, ",")
+	}
+	if *fileName != "" && !strings.HasSuffix(*fileName, ".go") {
+		log.Fatal("file must be a go file")
 	}
 
 	g.flags = &Flags{
 		typeNames: typNames,
+		fileName:  *fileName,
 		getset:    *getset,
 		json:      *json,
-		opt:       *opt,
-		verbose:   *verbose,
+		opt:       *opt || *option,
+		separate:  *s || *separate || *fileName == "",
+		verbose:   *v || *verbose,
 	}
 }
 
 func (g *Generator) Generate() map[string][]byte {
-	pat := g.data.GoFile
+	pat := g.flags.fileName
 	if pat == "" {
 		pat = "."
 	}
@@ -83,14 +94,37 @@ func (g *Generator) Generate() map[string][]byte {
 
 	if len(g.flags.typeNames) == 0 {
 		g.parseTypeNames()
+	} else {
+		for _, typName := range g.flags.typeNames {
+			gofile := getGoFile(g.pkg.pkg, typName)
+			if g.flags.fileName == "" {
+				g.flags.fileName = gofile
+			} else if g.flags.fileName != gofile {
+				log.Fatalf("types are not in the same file")
+			}
+		}
 	}
 
 	srcMap := make(map[string][]byte)
-	for _, typName := range g.flags.typeNames {
-		srcMap[typName] = g.generate(typName)
+	if g.flags.separate {
+		//each type has its own separate file
+		for _, typName := range g.flags.typeNames {
+			srcMap[g.fileName(typName, false)] = g.generate(typName)
+		}
+	} else {
+		//types in one file
+		var srcList [][]byte
+		for _, typName := range g.flags.typeNames {
+			srcList = append(srcList, g.generate(typName))
+		}
+		src, err := mergeGoSources(srcList...)
+		if err != nil {
+			log.Fatalf("merge sources error: %s", err)
+		}
+		srcMap[g.fileName("", false)] = src
 	}
 	if g.data.Option {
-		srcMap["@new_opt"] = g.generateOpt()
+		srcMap[g.fileName("opt", true)] = g.generateOpt()
 	}
 	return srcMap
 }
@@ -142,21 +176,18 @@ func (g *Generator) generate(typeName string) []byte {
 	return src
 }
 
-func (g *Generator) FileName(typeName string) string {
-	prefix := shoot.Cmd
-	postfix := ""
-	if strings.HasPrefix(typeName, "@") {
-		typeName = typeName[1:]
-	} else {
-		if !strings.HasPrefix(typeName, "_") {
-			prefix = getGoFile(g.pkg.pkg, typeName)
-		}
-		if !ast.IsExported(typeName) {
-			postfix = "_x"
-		}
+func (g *Generator) fileName(name string, pkgScope bool) string {
+	if pkgScope {
+		return fmt.Sprintf("%s%s_%s.go", shoot.Cmd, SubCmd, name)
 	}
-	fileName := strings.ToLower(fmt.Sprintf("%s_%s%s", prefix, typeName, postfix))
-	return fmt.Sprintf("%s.go", fileName)
+	gofile := g.flags.fileName
+	if name == "" {
+		return fmt.Sprintf("%s_%s%s.go", gofile, shoot.Cmd, SubCmd)
+	}
+	if !ast.IsExported(name) {
+		name = name + "_"
+	}
+	return fmt.Sprintf("%s_%s.go", gofile, strings.ToLower(name))
 }
 
 // addPackage adds a type checked Package and its syntax files to the generator.
@@ -199,4 +230,65 @@ func (g *Generator) parseTypeNames() {
 		})
 	}
 	g.flags.typeNames = typeNames
+}
+
+// MergeGoSources 接收任意数量的 Go 源码字符串，合并为一个格式化后的源文件
+func mergeGoSources(sources ...[]byte) ([]byte, error) {
+	if len(sources) == 0 {
+		return nil, fmt.Errorf("没有传入任何源码")
+	}
+
+	fset := token.NewFileSet()
+	var files []*ast.File
+
+	// 解析所有源码
+	for i, src := range sources {
+		file, err := parser.ParseFile(fset, fmt.Sprintf("file%d.go", i), src, parser.ParseComments)
+		if err != nil {
+			return nil, fmt.Errorf("解析第 %d 段源码失败: %w", i+1, err)
+		}
+		files = append(files, file)
+	}
+
+	// 用第一段源码的包名作为统一包名
+	pkgName := files[0].Name.Name
+
+	// 准备合并后的文件
+	merged := &ast.File{
+		Name:  ast.NewIdent(pkgName),
+		Decls: []ast.Decl{},
+	}
+
+	// import 去重
+	importMap := map[string]bool{}
+	for _, file := range files {
+		file.Name.Name = pkgName // 强制统一包名
+		for _, imp := range file.Imports {
+			if !importMap[imp.Path.Value] {
+				importMap[imp.Path.Value] = true
+				merged.Decls = append(merged.Decls, &ast.GenDecl{
+					Tok:   token.IMPORT,
+					Specs: []ast.Spec{imp},
+				})
+			}
+		}
+	}
+
+	// 合并除 import 外的其他声明
+	for _, file := range files {
+		for _, decl := range file.Decls {
+			if gen, ok := decl.(*ast.GenDecl); ok && gen.Tok == token.IMPORT {
+				continue // 跳过 import，已处理
+			}
+			merged.Decls = append(merged.Decls, decl)
+		}
+	}
+
+	// 格式化输出
+	var buf bytes.Buffer
+	if err := format.Node(&buf, fset, merged); err != nil {
+		return nil, fmt.Errorf("格式化失败: %w", err)
+	}
+
+	return buf.Bytes(), nil
 }

@@ -10,7 +10,7 @@ import (
 
 type Data struct {
 	shoot.BaseData
-	GoFile  string
+	// GoFile  string
 	Imports string
 	//All = Exported + Unexported
 	AllList     []string
@@ -30,6 +30,7 @@ type Data struct {
 type Flags struct {
 	verbose   bool
 	typeNames []string
+	fileName  string
 	//if true:
 	//[ ] = [get;set] => get+set
 	//[get] => get-only
@@ -39,9 +40,10 @@ type Flags struct {
 	//[get] => get-only
 	//[set] => set-only
 	//[get;set] => get+set
-	getset bool
-	json   bool
-	opt    bool
+	getset   bool
+	json     bool
+	opt      bool
+	separate bool
 }
 
 // Value represents a declared constant.

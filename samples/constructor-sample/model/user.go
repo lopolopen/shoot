@@ -2,7 +2,7 @@ package model
 
 import "constructorsample/model/dto"
 
-//go:generate go tool shoot new -getset -json -type=User
+//go:generate go tool shoot new -getset -json -file=$GOFILE
 
 type User struct {
 	id     string
@@ -12,8 +12,6 @@ type User struct {
 	tel    string
 }
 
-//go:generate go tool shoot new -type=Book
-
 type Book struct {
 	name    string
 	names   []string
@@ -22,8 +20,6 @@ type Book struct {
 	owner   *User
 	c       *dto.Class
 }
-
-//go:generate go tool shoot new -getset -json -type=Book2
 
 type Book2 struct {
 	name  string
