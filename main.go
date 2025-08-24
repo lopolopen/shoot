@@ -74,8 +74,6 @@ func formatSrc(src []byte) []byte {
 }
 
 func notedownSrc(fileName string, src []byte) {
-	src = formatSrc(src)
-
 	// write to tmpfile first
 	tmpFile, err := os.CreateTemp(".", fmt.Sprintf(".%s_", fileName))
 	defer func() {
