@@ -132,12 +132,21 @@ func parseEmbedField(file *ast.Field) map[string]string {
 	selMap := make(map[string]string)
 	if len(file.Names) == 0 {
 		switch t := file.Type.(type) {
+		case *ast.Ident:
+			selMap[t.Name] = ""
 		case *ast.SelectorExpr:
 			if pkgIdent, ok := t.X.(*ast.Ident); ok {
 				selMap[t.Sel.Name] = pkgIdent.Name
 			}
-		case *ast.Ident:
-			selMap[t.Name] = ""
+		case *ast.StarExpr:
+			switch x := t.X.(type) {
+			case *ast.Ident:
+				selMap[x.Name] = ""
+			case *ast.SelectorExpr:
+				if pkgIdent, ok := x.X.(*ast.Ident); ok {
+					selMap[x.Sel.Name] = pkgIdent.Name
+				}
+			}
 		}
 	}
 	return selMap
