@@ -1,10 +1,9 @@
 package model
 
-import "constructorsample/model/dto"
-
 //go:generate go tool shoot new -getset -json -file=$GOFILE
 
 type User struct {
+	//shoot: get
 	id     string
 	name   string
 	gender int
@@ -13,16 +12,9 @@ type User struct {
 }
 
 type Book struct {
+	//shoot: new
 	name    string
-	names   []string
-	nameMap map[string]string
-	userMap map[string]User
+	writers []string
+	Remarks string
 	owner   *User
-	c       *dto.Class
-}
-
-type Book2 struct {
-	name  string
-	names []string
-	owner *User
 }

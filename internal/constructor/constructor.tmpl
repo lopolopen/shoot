@@ -13,8 +13,10 @@ import "encoding/json"
 
 // New{{.TypeName}} constructs a new instance of type {{.TypeName}}
 func New{{.TypeName}}({{range .NewList}}{{.}} {{typeof .}},{{end}}) *{{.TypeName}} {
-	return &{{.TypeName}}{ {{range .NewList}}
-		{{.}}: {{.}},{{end}}
+	return &{{.TypeName}}{ 
+		{{range .NewList -}}
+		{{.}}: {{.}},
+		{{end}}
 	}
 }
 
@@ -28,7 +30,7 @@ func ({{firstLower .TypeName}} *{{.TypeName}})With(opts ..._opt_[{{.TypeName}}, 
     return {{firstLower .TypeName}}
 }
 
-{{range .AllList}}
+{{range .AllList -}}
 func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}}_ {{typeof .}})_opt_[{{$.TypeName}}, *{{$.TypeName}}] {
 	 return func({{firstLower $.TypeName}} *{{$.TypeName}}) {
         {{firstLower $.TypeName}}.{{.}} = {{camelCase .}}_ 
@@ -37,14 +39,15 @@ func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}}_ {{typeof .}})_opt_[{{$.Ty
 {{end}}
 
 func ({{firstLower .TypeName}} *{{.TypeName}})_def_(){
-	{{range .DefaultList}}{{firstLower $.TypeName}}.{{.}} = {{defaultof .}}
-	{{end}}
+	{{range .DefaultList -}}
+	{{firstLower $.TypeName}}.{{.}} = {{defaultof .}}{{"\n"}}
+	{{- end}}
 }
-{{end}}
+{{- end}}
 
 
 {{if .GetSet}}
-{{range .GetterList}}
+{{range .GetterList -}}
 // {{pascalCase .}} gets the value of field {{.}}
 func ({{firstLower $.TypeName}} *{{$.TypeName}}){{pascalCase .}}() {{typeof .}} {
 	return {{firstLower $.TypeName}}.{{.}}
@@ -60,46 +63,101 @@ func ({{firstLower $.TypeName}} *{{$.TypeName}})Set{{pascalCase .}}({{.}}_ {{typ
 {{end}}
 
 {{if .Json}}
-type _{{.TypeName}}_marshal struct { {{range .GetterList}}
-	{{range $.EmbedList}}{{if (xof .)}}{{xof .}}.{{end}}{{.}}
-	{{end}}
-	{{pascalCase .}} {{typeof .}}{{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{end}}
-	{{range $.ExportedList}} {{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}
-	{{end}}
+type _{{.TypeName}}_marshal struct { 
+	{{range .GetterList -}}
+	{{pascalCase .}} {{typeof .}}{{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{"\n"}}
+	{{- end}}
+	{{range $.ExportedList}} 
+	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{"\n"}}
+	{{- end}}
 }
 
-type _{{.TypeName}}_unmarshal struct { {{range .SetterList}}
-	{{range $.EmbedList}}{{if (xof .)}}{{xof .}}.{{end}}{{.}}
-	{{end}}
-	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{end}}
-	{{range .ExportedList}}{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}
-	{{end}}
+type _{{.TypeName}}_unmarshal struct { 
+	{{range .SetterList -}}
+	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{"\n"}}
+	{{- end}}
+	{{range .ExportedList -}}
+	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{"\n"}}
+	{{- end}}
 }
 
 // MarshalJSON serializes type {{.TypeName}} to json bytes
 func ({{firstLower .TypeName}} {{.TypeName}})MarshalJSON()([]byte, error) {
 	data := _{{.TypeName}}_marshal{ 
-		{{range .EmbedList}}{{.}}: {{firstLower $.TypeName}}.{{.}},
-		{{end}}
-		{{range .GetterList}}{{pascalCase .}}: {{firstLower $.TypeName}}.{{pascalCase .}}(),
-		{{end}}
-		{{range .ExportedList}}{{.}}: {{firstLower $.TypeName}}.{{.}},
-		{{end}}
+		{{range .GetterList -}}
+		{{pascalCase .}}: {{firstLower $.TypeName}}.{{pascalCase .}}(),{{"\n"}}
+		{{- end}}
+		{{range .ExportedList -}}
+		{{.}}: {{firstLower $.TypeName}}.{{.}},{{"\n"}}
+		{{- end}}
 	}
+	{{if not .EmbedList -}}
 	return json.Marshal(data)
+	{{- else}}
+	values := make(map[string]interface{})
+	{{range $i, $v := .EmbedList -}}
+	j{{$i}}, err := json.Marshal({{firstLower $.TypeName}}.{{$v}})
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(j{{$i}}, &values)
+	if err != nil {
+		return nil, err
+	}
+	{{- end}}
+	j, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(j, &values)
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(values)
+	{{- end}}
 }
 
 // UnmarshalJSON deserializes json bytes to type {{.TypeName}}
 func ({{firstLower .TypeName}} *{{.TypeName}})UnmarshalJSON(data []byte) error {
 	var {{camelCase .TypeName}}_ _{{.TypeName}}_unmarshal
 	if err := json.Unmarshal(data, &{{camelCase .TypeName}}_); err != nil {
-		return nil
+		return err
 	}
-	{{range .SetterList}}{{firstLower $.TypeName}}.Set{{pascalCase .}}({{camelCase $.TypeName}}_.{{pascalCase .}})
-	{{end}}
-	{{range .EmbedList}}{{firstLower $.TypeName}}.{{.}} = {{camelCase $.TypeName}}_.{{.}}
-	{{end}}
-	{{range .ExportedList}}{{firstLower $.TypeName}}.{{.}} = {{camelCase $.TypeName}}_.{{.}}
-	{{end}} return nil
+	{{range .SetterList -}}
+	{{firstLower $.TypeName}}.Set{{pascalCase .}}({{camelCase $.TypeName}}_.{{pascalCase .}}){{"\n"}}
+	{{- end}}
+	{{range .ExportedList -}}
+	{{firstLower $.TypeName}}.{{.}} = {{camelCase $.TypeName}}_.{{.}}{{"\n"}}
+	{{- end}} 
+	{{if .EmbedList -}}
+	all := make(map[string]interface{})
+	err := json.Unmarshal(data, &all)
+	if err != nil {
+		return err
+	}
+	j, err := json.Marshal({{camelCase .TypeName}}_ )
+	if err != nil {
+		return err
+	}
+	some := make(map[string]interface{})
+	err = json.Unmarshal(j, &some)
+	if err != nil {
+		return err
+	}
+	for key := range some {
+		delete(all, key)
+	}
+	jrest, err := json.Marshal(all)
+	if err != nil {
+		return err
+	}
+	{{range .EmbedList -}}
+		err = json.Unmarshal(jrest, &{{firstLower $.TypeName}}.{{.}})
+		if err != nil {
+			return err
+		}
+	{{- end}}
+	{{- end}}
+	return nil
 }
 {{end}}

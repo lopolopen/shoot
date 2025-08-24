@@ -6,15 +6,6 @@ import (
 	"fmt"
 )
 
-type Base struct {
-	Name string `json:"name"`
-}
-
-type Son struct {
-	Base
-	Name string `json:"name"`
-}
-
 func main() {
 	user := model.NewUser("11", "Tom", 0, 21, "123456")
 	fmt.Printf("%+v\n", user)
@@ -35,23 +26,14 @@ func main() {
 	}
 	fmt.Printf("%+v\n", &user2)
 
-	conf := model.NewConf("1", "127.0.0.1", 80)
-	fmt.Printf("%+v\n", conf)
+	book := model.NewBook("Love")
+	book.SetWriters([]string{"Bill"})
+	book.Remarks = "comming soon!"
+	book.SetOwner(user)
 
-	conf2 := model.NewConf2("2").With()
-	fmt.Printf("%+v\n", conf2)
-
-	//only init with default values
-	conf2 = new(model.Conf2).With()
-	fmt.Printf("%+v\n", conf2)
-
-	son := Son{
-		Name: "s",
-		Base: Base{
-			Name: "b",
-		},
+	bookJson, err := json.Marshal(book)
+	if err != nil {
+		panic(err)
 	}
-	sonJ, _ := json.Marshal(son)
-	fmt.Println(string(sonJ))
-	fmt.Println(son.Name)
+	fmt.Println(string(bookJson))
 }
