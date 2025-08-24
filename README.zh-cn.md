@@ -1,12 +1,12 @@
-# shoot        [中文](https://github.com/lopolopen/shoot/blob/main/README.zh-cn.md)
-A pack of tools for "go generate".
+# shoot        [English](https://github.com/lopolopen/shoot/blob/main/README.md)
+为 "go generate" 而打造的工具集。
 
-# Project status:
-BETA VERSION. USE WITH CAUTION!
+# 项目状态:
+BETA版本，谨慎使用！
 
-# How to use?
+# 如何使用?
 
-## using go1.23+ (SUGGESTED)
+## 使用 go1.23+ （推荐）
 
 ```zsh
 go get -tool github.com/lopolopen/shoot@latest
@@ -23,11 +23,11 @@ go generate
 go generate ./...
 ```
 
-## using go1.23-
+## 使用 go1.23-
 
 ```zsh
-# installing this tool needs go1.23+
-# can be used by go1.23- project after installed
+# 安装此工具需要 go1.23 或以上版本
+# 安装后可用于 go1.23 以下版本的项目
 go install github.com/lopolopen/shoot@latest
 ```
 
@@ -42,7 +42,7 @@ go generate
 go generate ./...
 ```
 
-# TODO:
+# 待办：
 - [x] shoot new -getset -type=YourType
 - [x] shoot new: field instruction like get;default=1
 - [x] shoot new -opt|option -type=YourType
@@ -57,7 +57,7 @@ go generate ./...
 - [ ] shoot enum -json -type=YourEnum
 - [ ] refactor: duplicated code
 
-# Inspiring projects
+# 启发项目：
 * [stringer](https://pkg.go.dev/golang.org/x/tools/cmd/stringer)
 * [enumer](https://github.com/dmarkham/enumer)
 * [genapi](https://github.com/lexcao/genapi)
