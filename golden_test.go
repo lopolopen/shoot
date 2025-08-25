@@ -17,6 +17,12 @@ type Golden struct {
 
 var goldens = []Golden{
 	{
+		cmd: "shoot new -getset -type=User ./notexists -v",
+		names: []string{
+			"new_getset.go_user.go",
+		},
+	},
+	{
 		cmd: "shoot new -getset -type=User ./testdata",
 		names: []string{
 			"new_getset.go_user.go",
@@ -68,7 +74,11 @@ func generate(t *testing.T, test Golden) map[string][]byte {
 
 	srcMap := gen.Generate()
 	if len(srcMap) != len(test.names) {
-		t.Errorf("expected count: %d, got: %d", len(test.names), len(srcMap))
+		var keys []string
+		for key := range srcMap {
+			keys = append(keys, key)
+		}
+		t.Errorf("expected count: %d, got: %v", len(test.names), keys)
 	}
 	return srcMap
 }

@@ -13,6 +13,10 @@ import (
 	"github.com/lopolopen/shoot/shoot"
 )
 
+var subCmdMap = map[string]string{
+	constructor.SubCmd: "[-new] [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+}
+
 func main() {
 	log.SetFlags(0)
 	flag.Usage = func() {
@@ -22,7 +26,7 @@ func main() {
 		log.Println()
 		// log.Printf("%s [-bit] [-json]\n", enumer.SubCmd)
 		// log.Println()
-		log.Printf("%s [-new] [-opt] [-getset]  [-json]\n", constructor.SubCmd)
+		log.Printf("%s %s\n", constructor.SubCmd, subCmdMap[constructor.SubCmd])
 		log.Println()
 		flag.PrintDefaults()
 	}

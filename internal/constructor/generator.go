@@ -65,13 +65,21 @@ func (g *Generator) ParseFlags() {
 	if *typeNames != "" {
 		typNames = strings.Split(*typeNames, ",")
 	}
-	if *fileName != "" && !strings.HasSuffix(*fileName, ".go") {
-		log.Fatal("file must be a go file")
-	}
 
 	dir := sub.Arg(0) //e.g. ./testdata
 	if dir == "" {
 		dir = "."
+	}
+
+	if *fileName != "" {
+		if !strings.HasSuffix(*fileName, ".go") {
+			log.Fatal("file must be a go file")
+		}
+		fp := filepath.Join(dir, *fileName)
+		_, err := os.Stat(fp)
+		if !(err == nil || os.IsExist(err)) {
+			log.Fatalf("file not exists: %s", fp)
+		}
 	}
 
 	g.flags = &Flags{
@@ -91,8 +99,10 @@ func (g *Generator) Generate() map[string][]byte {
 	if g.flags.fileName != "" {
 		pat = filepath.Join(pat, g.flags.fileName)
 	}
+	fmt.Println(">>>>>>>>>>>>>>>>>>")
 
 	g.parsePackage([]string{pat})
+	fmt.Println(">>>>>>>>>>>>>>>>>>")
 
 	g.data.BaseData = shoot.BaseData{
 		Cmd:         strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "),
