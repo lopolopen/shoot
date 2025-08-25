@@ -28,6 +28,7 @@ type Data struct {
 }
 
 type Flags struct {
+	dir       string
 	verbose   bool
 	typeNames []string
 	fileName  string

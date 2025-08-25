@@ -54,7 +54,7 @@ func (g *Generator) ParseFlags() {
 	verbose := sub.Bool("verbose", false, "verbose output")
 	v := sub.Bool("v", false, "verbose output (alias for -separate)")
 
-	sub.Parse((flag.Args()[1:]))
+	sub.Parse((flag.Args()[1:])) //e.g. new -getset -type=YourType ./testdata
 
 	if *typeNames == "" && *fileName == "" {
 		sub.Usage()
@@ -69,6 +69,11 @@ func (g *Generator) ParseFlags() {
 		log.Fatal("file must be a go file")
 	}
 
+	dir := sub.Arg(0) //e.g. ./testdata
+	if dir == "" {
+		dir = "."
+	}
+
 	g.flags = &Flags{
 		typeNames: typNames,
 		fileName:  *fileName,
@@ -77,13 +82,14 @@ func (g *Generator) ParseFlags() {
 		opt:       *opt || *option,
 		separate:  *s || *separate || *fileName == "",
 		verbose:   *v || *verbose,
+		dir:       dir,
 	}
 }
 
 func (g *Generator) Generate() map[string][]byte {
-	pat := g.flags.fileName
-	if pat == "" {
-		pat = "."
+	pat := g.flags.dir
+	if g.flags.fileName != "" {
+		pat = filepath.Join(pat, g.flags.fileName)
 	}
 
 	g.parsePackage([]string{pat})

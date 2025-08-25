@@ -39,9 +39,9 @@ func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}}_ {{typeof .}})_opt_[{{$.Ty
 {{end}}
 
 func ({{firstLower .TypeName}} *{{.TypeName}})_def_(){
-	{{range .DefaultList -}}
+	{{- range .DefaultList -}}
 	{{firstLower $.TypeName}}.{{.}} = {{defaultof .}}{{"\n"}}
-	{{- end}}
+	{{- end -}}
 }
 {{- end}}
 
