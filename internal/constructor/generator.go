@@ -99,10 +99,8 @@ func (g *Generator) Generate() map[string][]byte {
 	if g.flags.fileName != "" {
 		pat = filepath.Join(pat, g.flags.fileName)
 	}
-	fmt.Println(">>>>>>>>>>>>>>>>>>")
 
 	g.parsePackage([]string{pat})
-	fmt.Println(">>>>>>>>>>>>>>>>>>")
 
 	g.data.BaseData = shoot.BaseData{
 		Cmd:         strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "),
