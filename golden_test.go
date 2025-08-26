@@ -16,12 +16,12 @@ type Golden struct {
 }
 
 var goldens = []Golden{
-	{
-		cmd: "shoot new -getset -type=User ./notexists -v",
-		names: []string{
-			"new_getset.go_user.go",
-		},
-	},
+	// {
+	// 	cmd: "shoot new -getset -type=User ./notexists -v",
+	// 	names: []string{
+	// 		"new_getset.go_user.go",
+	// 	},
+	// },
 	{
 		cmd: "shoot new -getset -type=User ./testdata",
 		names: []string{

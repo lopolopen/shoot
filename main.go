@@ -3,11 +3,8 @@ package main
 import (
 	"flag"
 	"fmt"
-	"go/format"
 	"log"
 	"os"
-
-	"golang.org/x/tools/imports"
 
 	"github.com/lopolopen/shoot/internal/constructor"
 	"github.com/lopolopen/shoot/shoot"
@@ -62,21 +59,6 @@ func main() {
 	}
 }
 
-func formatSrc(src []byte) []byte {
-	// format imports
-	src, err := imports.Process("./_.go", src, nil)
-	if err != nil {
-		log.Fatalf("format imports: %s", err)
-	}
-
-	// format source code
-	src, err = format.Source(src)
-	if err != nil {
-		log.Fatalf("format source: %s", err)
-	}
-	return src
-}
-
 func notedownSrc(fileName string, src []byte) {
 	// write to tmpfile first
 	tmpFile, err := os.CreateTemp(".", fmt.Sprintf(".%s_", fileName))
@@ -102,3 +84,18 @@ func notedownSrc(fileName string, src []byte) {
 		log.Fatalf("moving tempfile to output file: %s", err)
 	}
 }
+
+// func formatSrc(src []byte) []byte {
+// 	// format imports
+// 	src, err := imports.Process("./_.go", src, nil)
+// 	if err != nil {
+// 		log.Fatalf("format imports: %s", err)
+// 	}
+
+// 	// format source code
+// 	src, err = format.Source(src)
+// 	if err != nil {
+// 		log.Fatalf("format source: %s", err)
+// 	}
+// 	return src
+// }
