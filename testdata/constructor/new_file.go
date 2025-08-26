@@ -1,4 +1,4 @@
-package testdata
+package constructor
 
 type F1 struct {
 	fa string

@@ -18,6 +18,7 @@ import (
 
 	"github.com/lopolopen/shoot/shoot"
 	"golang.org/x/tools/go/packages"
+	"golang.org/x/tools/imports"
 )
 
 const SubCmd = "new"
@@ -99,10 +100,8 @@ func (g *Generator) Generate() map[string][]byte {
 	if g.flags.fileName != "" {
 		pat = filepath.Join(pat, g.flags.fileName)
 	}
-	fmt.Println(">>>>>>>>>>>>>>>>>>")
 
 	g.parsePackage([]string{pat})
-	fmt.Println(">>>>>>>>>>>>>>>>>>")
 
 	g.data.BaseData = shoot.BaseData{
 		Cmd:         strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "),
@@ -147,7 +146,6 @@ func (g *Generator) Generate() map[string][]byte {
 }
 
 // parsePackage analyzes the single package constructed from the patterns and tags.
-// parsePackage exits if there is an error.
 func (g *Generator) parsePackage(patterns []string) {
 	cfg := &packages.Config{
 		Mode:  packages.LoadSyntax,
@@ -321,4 +319,19 @@ func mergeGoSources(sources ...[]byte) ([]byte, error) {
 		return nil, fmt.Errorf("format merged source: %w", err)
 	}
 	return out, nil
+}
+
+func formatSrc(src []byte) ([]byte, error) {
+	// format imports
+	src, err := imports.Process("_.go", src, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// format source code
+	src, err = format.Source(src)
+	if err != nil {
+		return nil, err
+	}
+	return src, nil
 }

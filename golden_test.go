@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/lopolopen/shoot/internal/constructor"
+	"github.com/lopolopen/shoot/internal/enumer"
+	"github.com/lopolopen/shoot/shoot"
 	"github.com/sebdah/goldie/v2"
 )
 
@@ -15,41 +17,50 @@ type Golden struct {
 	names []string
 }
 
-var goldens = []Golden{
+var goldens_new = []Golden{
+	// {
+	// 	cmd: "shoot new -getset -type=User ./notexists -v",
+	// 	names: []string{
+	// 		"new_getset.go_user.go",
+	// 	},
+	// },
 	{
-		cmd: "shoot new -getset -type=User ./notexists -v",
+		cmd: "shoot new -getset -type=User ./testdata/constructor",
 		names: []string{
 			"new_getset.go_user.go",
 		},
 	},
 	{
-		cmd: "shoot new -getset -type=User ./testdata",
-		names: []string{
-			"new_getset.go_user.go",
-		},
-	},
-	{
-		cmd: "shoot new -opt -type=Conf ./testdata",
+		cmd: "shoot new -opt -type=Conf ./testdata/constructor",
 		names: []string{
 			"new_opt.go_conf.go",
 			"shootnew_opt.go",
 		},
 	},
 	{
-		cmd: "shoot new -file=new_file.go ./testdata",
+		cmd: "shoot new -file=new_file.go ./testdata/constructor",
 		names: []string{
 			"new_file.go_shootnew.go",
 		},
 	},
 }
 
-func TestGenerate_Golden(t *testing.T) {
+var goldens_enum = []Golden{
+	{
+		cmd: "shoot enum -bit -type=FormatStyle ./testdata/enumer",
+		names: []string{
+			"enum_bit.go_formatstyle.go",
+		},
+	},
+}
+
+func TestShootNew_Golden(t *testing.T) {
 	g := goldie.New(t,
-		goldie.WithFixtureDir("testdata"),
+		goldie.WithFixtureDir("testdata/constructor"),
 	)
 
-	for _, test := range goldens {
-		srcMap := generate(t, test)
+	for _, test := range goldens_new {
+		srcMap := generate(t, test, constructor.New())
 
 		for _, name := range test.names {
 			got, ok := srcMap[name]
@@ -65,11 +76,32 @@ func TestGenerate_Golden(t *testing.T) {
 	}
 }
 
-func generate(t *testing.T, test Golden) map[string][]byte {
+func TestShootEnum_Golden(t *testing.T) {
+	g := goldie.New(t,
+		goldie.WithFixtureDir("testdata/enumer"),
+	)
+
+	for _, test := range goldens_enum {
+		srcMap := generate(t, test, enumer.New())
+
+		for _, name := range test.names {
+			got, ok := srcMap[name]
+			if !ok {
+				var keys []string
+				for key := range srcMap {
+					keys = append(keys, key)
+				}
+				t.Errorf("expected file: %s, got: %v", name, keys)
+			}
+			g.Assert(t, name, got)
+		}
+	}
+}
+
+func generate(t *testing.T, test Golden, gen shoot.Generator) map[string][]byte {
 	os.Args = strings.Split(test.cmd, " ")
 	flag.Parse()
 
-	gen := constructor.New()
 	gen.ParseFlags()
 
 	srcMap := gen.Generate()
