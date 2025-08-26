@@ -1,4 +1,4 @@
-package testdata
+package constructor
 
 type User struct {
 	id   int
