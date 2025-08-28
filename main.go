@@ -87,3 +87,18 @@ func notedownSrc(fileName string, src []byte) {
 		log.Fatalf("moving tempfile to output file: %s", err)
 	}
 }
+
+// func formatSrc(src []byte) []byte {
+// 	// format imports
+// 	src, err := imports.Process("./_.go", src, nil)
+// 	if err != nil {
+// 		log.Fatalf("format imports: %s", err)
+// 	}
+
+// 	// format source code
+// 	src, err = format.Source(src)
+// 	if err != nil {
+// 		log.Fatalf("format source: %s", err)
+// 	}
+// 	return src
+// }
