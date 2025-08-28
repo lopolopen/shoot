@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/lopolopen/shoot/internal/constructor"
+	"github.com/lopolopen/shoot/internal/enumer"
 	"github.com/lopolopen/shoot/shoot"
 )
 
@@ -21,8 +22,8 @@ func main() {
 		log.Println()
 		log.Println(`These are all the sub commands supported as of now:`)
 		log.Println()
-		// log.Printf("%s [-bit] [-json]\n", enumer.SubCmd)
-		// log.Println()
+		log.Printf("%s [-bit] [-json]\n", enumer.SubCmd)
+		log.Println()
 		log.Printf("%s %s\n", constructor.SubCmd, subCmdMap[constructor.SubCmd])
 		log.Println()
 		flag.PrintDefaults()
@@ -40,6 +41,8 @@ func main() {
 	switch subCmd {
 	case constructor.SubCmd:
 		g = constructor.New()
+	case enumer.SubCmd:
+		g = enumer.New()
 	default:
 		flag.Usage()
 		os.Exit(2)
