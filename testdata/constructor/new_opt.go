@@ -1,4 +1,4 @@
-package testdata
+package constructor
 
 type Conf struct {
 	//shoot: new
