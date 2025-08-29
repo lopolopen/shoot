@@ -8,7 +8,7 @@ import (
 
 	"github.com/lopolopen/shoot/internal/constructor"
 	"github.com/lopolopen/shoot/internal/enumer"
-	"github.com/lopolopen/shoot/shoot"
+	"github.com/lopolopen/shoot/internal/shoot"
 	"github.com/sebdah/goldie/v2"
 )
 
@@ -34,7 +34,6 @@ var goldens_new = []Golden{
 		cmd: "shoot new -opt -type=Conf ./testdata/constructor",
 		names: []string{
 			"new_opt.go_conf.go",
-			"shootnew_opt.go",
 		},
 	},
 	{
@@ -50,6 +49,12 @@ var goldens_enum = []Golden{
 		cmd: "shoot enum -bit -type=FormatStyle ./testdata/enumer",
 		names: []string{
 			"enum_bit.go_formatstyle.go",
+		},
+	},
+	{
+		cmd: "shoot enum -json -type=Color ./testdata/enumer",
+		names: []string{
+			"enum_json.go_color.go",
 		},
 	},
 }

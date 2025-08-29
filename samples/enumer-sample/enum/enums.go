@@ -1,6 +1,8 @@
 package enum
 
-//go:generate go tool shoot enum -file=$GOFILE
+//go:generate go tool shoot enum -json -text -file=$GOFILE
+
+type WillBeIgnored = int
 
 type Light int32
 

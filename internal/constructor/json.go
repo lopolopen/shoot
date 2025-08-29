@@ -4,11 +4,11 @@ import (
 	"go/ast"
 	"regexp"
 
-	"github.com/lopolopen/shoot/internal"
+	"github.com/lopolopen/shoot/internal/transfer"
 )
 
 func (g *Generator) makeJson(typeName string) {
-	g.data.Register("jsontagof", internal.ID)
+	g.data.Register("jsontagof", transfer.ID)
 
 	if !g.flags.json {
 		return

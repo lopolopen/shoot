@@ -8,12 +8,12 @@ import (
 	"log"
 	"regexp"
 
-	"github.com/lopolopen/shoot/internal"
+	"github.com/lopolopen/shoot/internal/transfer"
 )
 
 func (g *Generator) makeNew(typeName string) {
-	g.data.Register("typeof", internal.ID)
-	g.data.Register("xof", internal.ID)
+	g.data.Register("typeof", transfer.ID)
+	g.data.Register("xof", transfer.ID)
 
 	var imports string
 	var allList []string
