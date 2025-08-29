@@ -3,7 +3,7 @@ package shoot
 import (
 	"text/template"
 
-	"github.com/lopolopen/shoot/shoot/transfer"
+	"github.com/lopolopen/shoot/internal/transfer"
 )
 
 const Cmd = "shoot"

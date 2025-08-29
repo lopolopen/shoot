@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"enumersample/enum"
 	"fmt"
+
+	"github.com/lopolopen/shoot"
 )
 
 type X struct {
@@ -20,4 +22,15 @@ func main() {
 	}
 	xJson, _ := json.Marshal(x)
 	fmt.Println(string(xJson))
+
+	var x2 X
+	json.Unmarshal(xJson, &x2)
+	fmt.Println(x2)
+
+	l, _ := shoot.ParseEnum[enum.Light]("Red")
+	fmt.Println(l)
+
+	if !shoot.IsEnum[enum.Light](5) {
+		fmt.Println("not")
+	}
 }

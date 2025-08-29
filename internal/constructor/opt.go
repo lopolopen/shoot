@@ -1,22 +1,17 @@
 package constructor
 
 import (
-	"bytes"
-	"fmt"
 	"go/ast"
-	"go/format"
 	"log"
 	"regexp"
 	"slices"
 	"strings"
-	"text/template"
 
-	"github.com/lopolopen/shoot/internal"
-	"github.com/lopolopen/shoot/shoot"
+	"github.com/lopolopen/shoot/internal/transfer"
 )
 
 func (g *Generator) makeOpt(typeName string) {
-	g.data.Register("defaultof", internal.ID)
+	g.data.Register("defaultof", transfer.ID)
 
 	var defList []string
 	defMap := make(map[string]string)
@@ -76,34 +71,6 @@ func (g *Generator) makeOpt(typeName string) {
 	})
 	g.data.DefaultList = defList
 	g.data.Option = true
-}
-
-func (g *Generator) generateOpt() []byte {
-	cmd := g.data.Cmd
-	g.data.Cmd = fmt.Sprintf("%s %s -opt", shoot.Cmd, SubCmd)
-	defer func() {
-		g.data.Cmd = cmd
-	}()
-	var buff bytes.Buffer
-	tmpl, err := template.New("opt").Funcs(g.data.Transfers()).Parse(tmplTxtOpt)
-	if err != nil {
-		log.Fatalf("parsing template: %s", err)
-	}
-
-	err = tmpl.Execute(&buff, g.data)
-	if err != nil {
-		log.Fatalf("executing template: %s", err)
-	}
-
-	src := buff.Bytes()
-	if g.flags.verbose {
-		log.Printf("[debug]:\n%s", string(src))
-	}
-	src, err = format.Source(src)
-	if err != nil {
-		log.Fatalf("format source: %s", err)
-	}
-	return src
 }
 
 func parseDefault(doc string) (string, bool) {

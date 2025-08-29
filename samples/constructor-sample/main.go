@@ -4,6 +4,8 @@ import (
 	"constructorsample/model"
 	"encoding/json"
 	"fmt"
+
+	"github.com/lopolopen/shoot"
 )
 
 func main() {
@@ -36,4 +38,10 @@ func main() {
 		panic(err)
 	}
 	fmt.Println(string(bookJson))
+
+	conf := shoot.NewWith(
+		model.NameOfConf("name"),
+		model.HostOfConf([]string{"host"}),
+	)
+	fmt.Println(conf)
 }

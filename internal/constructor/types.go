@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/types"
 
-	"github.com/lopolopen/shoot/shoot"
+	"github.com/lopolopen/shoot/internal/shoot"
 	"golang.org/x/tools/go/packages"
 )
 
