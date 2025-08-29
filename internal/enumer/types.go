@@ -4,7 +4,7 @@ import (
 	"go/ast"
 	"go/types"
 
-	"github.com/lopolopen/shoot/shoot"
+	"github.com/lopolopen/shoot/internal/shoot"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -12,11 +12,15 @@ type Data struct {
 	shoot.BaseData
 	NameList []string
 	Bitwise  bool
+	Json     bool
+	Text     bool
 }
 
 type Flags struct {
 	shoot.BaseFlags
 	bitwise bool
+	json    bool
+	text    bool
 }
 
 // Value represents a declared constant.

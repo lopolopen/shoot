@@ -7,9 +7,12 @@ import (
 	{{.Imports}}
 )
 {{end}}
-{{if .Json}}
+{{if .Json -}}
 import "encoding/json"
-{{end}}
+{{- end}}
+{{if .Option -}}
+import "github.com/lopolopen/shoot"
+{{- end}}
 
 // New{{.TypeName}} constructs a new instance of type {{.TypeName}}
 func New{{.TypeName}}({{range .NewList}}{{.}} {{typeof .}},{{end}}) *{{.TypeName}} {
@@ -22,8 +25,8 @@ func New{{.TypeName}}({{range .NewList}}{{.}} {{typeof .}},{{end}}) *{{.TypeName
 
 {{if .Option}}
 // With initializes this instance using the functional options pattern
-func ({{firstLower .TypeName}} *{{.TypeName}})With(opts ..._opt_[{{.TypeName}}, *{{.TypeName}}]) *{{.TypeName}} { 
-	{{firstLower .TypeName}}._def_()
+func ({{firstLower .TypeName}} *{{.TypeName}})With(opts ...shoot.Option[{{.TypeName}}, *{{.TypeName}}]) *{{.TypeName}} { 
+	{{firstLower .TypeName}}.SetDefault()
 	for _, opt := range opts {
         opt({{firstLower .TypeName}})
     }
@@ -31,14 +34,16 @@ func ({{firstLower .TypeName}} *{{.TypeName}})With(opts ..._opt_[{{.TypeName}}, 
 }
 
 {{range .AllList -}}
-func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}}_ {{typeof .}})_opt_[{{$.TypeName}}, *{{$.TypeName}}] {
+// {{pascalCase .}}Of{{$.TypeName}} is a configuration for the filed {{.}}
+func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}}_ {{typeof .}})shoot.Option[{{$.TypeName}}, *{{$.TypeName}}] {
 	 return func({{firstLower $.TypeName}} *{{$.TypeName}}) {
         {{firstLower $.TypeName}}.{{.}} = {{camelCase .}}_ 
     }
 }
 {{end}}
 
-func ({{firstLower .TypeName}} *{{.TypeName}})_def_(){
+// SetDefault sets the default values
+func ({{firstLower .TypeName}} *{{.TypeName}})SetDefault(){
 	{{- range .DefaultList -}}
 	{{firstLower $.TypeName}}.{{.}} = {{defaultof .}}{{"\n"}}
 	{{- end -}}
