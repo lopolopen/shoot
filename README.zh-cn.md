@@ -11,27 +11,34 @@ Usage: shoot <subcommand> [options]
 
 These are all the sub commands supported as of now:
 
-new [-new] [-opt] [-getset] [-json] [-s(aparate)] [-v(erbose)] [-type=<Type> | -file=<File>] [dir]
+new [-new] [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]
+
+enum [-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]
 ```
 
 ## 使用 go1.23+ （推荐）
 
 ```zsh
-go get -tool github.com/lopolopen/shoot@latest
+go get github.com/lopolopen/shoot@latest
+go get -tool github.com/lopolopen/shoot/cmd/shoot@latest
 ```
 
 ```go
+// 生成指令示例：
+
 //go:generate go tool shoot new -getset -json -type=YourType
 
 //go:generate go tool shoot new -getset -json -file $GOFILE
+
+//go:generate go tool shoot enum -json -type=YourEnum
 ```
 
 ```zsh
-go generate
-go generate ./...
+go generate 		# 在当前目录执行
+go generate ./...	# 递归当前目录及其子目录
 ```
 
-## 使用 go1.23-
+## 使用 go1.23- （至少1.18）
 
 ```zsh
 # 安装此工具需要 go1.23 或以上版本
@@ -43,6 +50,8 @@ go install github.com/lopolopen/shoot@latest
 //go:generate shoot new -getset -json -type=YourType
 
 //go:generate shoot new -getset -json -file $GOFILE
+
+//go:generate shoot enum -json -type=YourEnum
 ```
 
 ```zsh
@@ -108,9 +117,8 @@ func (u *User) SetAge(age_ int) {
 - [x] shoot new -file=YourFile
 - [ ] shoot new: type instruction like ignore
 - [x] shoot new: -separate
-- [ ] shoot enum -str|string -type=YourEnum
-- [ ] shoot enum -bit|bitwise -type=YourEnum
-- [ ] shoot enum -json -type=YourEnum
+- [x] shoot enum -bit|bitwise -type=YourEnum
+- [x] shoot enum -json -type=YourEnum
 - [ ] refactor: duplicated code
 
 # 启发项目：

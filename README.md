@@ -11,27 +11,34 @@ Usage: shoot <subcommand> [options]
 
 These are all the sub commands supported as of now:
 
-new [-new] [-opt] [-getset] [-json] [-s(aparate)] [-v(erbose)] [-type=<Type> | -file=<File>] [dir]
+new [-new] [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]
+
+enum [-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]
 ```
 
 ## using go1.23+ (SUGGESTED)
 
 ```zsh
+go get github.com/lopolopen/shoot@latest
 go get -tool github.com/lopolopen/shoot@latest
 ```
 
 ```go
+// generate instruction examples
+
 //go:generate go tool shoot new -getset -json -type=YourType
 
 //go:generate go tool shoot new -getset -json -file $GOFILE
+
+//go:generate go tool shoot enum -json -type=YourEnum
 ```
 
 ```zsh
-go generate
-go generate ./...
+go generate			# run in the current directory
+go generate ./...	# recursively run in the current directory and its subdirectories
 ```
 
-## using go1.23-
+## using go1.23- (at leat 1.18)
 
 ```zsh
 # installing this tool needs go1.23+
@@ -43,6 +50,8 @@ go install github.com/lopolopen/shoot@latest
 //go:generate shoot new -getset -json -type=YourType
 
 //go:generate shoot new -getset -json -file $GOFILE
+
+//go:generate shoot enum -json -type=YourEnum
 ```
 
 ```zsh
@@ -109,9 +118,8 @@ func (u *User) SetAge(age_ int) {
 - [x] shoot new -file=YourFile
 - [ ] shoot new: type instruction like ignore
 - [x] shoot new: -separate
-- [ ] shoot enum -str|string -type=YourEnum
-- [ ] shoot enum -bit|bitwise -type=YourEnum
-- [ ] shoot enum -json -type=YourEnum
+- [x] shoot enum -bit|bitwise -type=YourEnum
+- [x] shoot enum -json -type=YourEnum
 - [ ] refactor: duplicated code
 
 # Inspiring projects

@@ -13,6 +13,7 @@ import (
 
 var subCmdMap = map[string]string{
 	constructor.SubCmd: "[-new] [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+	enumer.SubCmd:      "[-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]",
 }
 
 func main() {
@@ -22,10 +23,12 @@ func main() {
 		log.Println()
 		log.Println(`These are all the sub commands supported as of now:`)
 		log.Println()
-		log.Printf("%s [-bit] [-json]\n", enumer.SubCmd)
-		log.Println()
-		log.Printf("%s %s\n", constructor.SubCmd, subCmdMap[constructor.SubCmd])
-		log.Println()
+
+		for _, sc := range []string{constructor.SubCmd, enumer.SubCmd} {
+			log.Printf("%s %s\n", sc, subCmdMap[sc])
+			log.Println()
+		}
+
 		flag.PrintDefaults()
 	}
 	flag.Parse()
