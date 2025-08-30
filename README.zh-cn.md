@@ -43,7 +43,8 @@ go generate ./...	# 递归当前目录及其子目录
 ```zsh
 # 安装此工具需要 go1.23 或以上版本
 # 安装后可用于 go1.23 以下版本的项目
-go install github.com/lopolopen/shoot@latest
+go get github.com/lopolopen/shoot@latest
+go install github.com/lopolopen/shoot/cmd/shoot@latest
 ```
 
 ```go
