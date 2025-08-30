@@ -26,7 +26,7 @@ enum [-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]
 go get -tool github.com/lopolopen/shoot/cmd/shoot@latest
 ```
 
-### 成指令示例：
+### 生成指令示例：
 ```go
 //go:generate go tool shoot new -getset -json -type=YourType
 
