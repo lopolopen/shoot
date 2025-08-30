@@ -16,16 +16,18 @@ new [-new] [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-
 enum [-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]
 ```
 
-## using go1.23+ (SUGGESTED)
+## using go1.24+ (SUGGESTED)
 
+### why 1.24
+[Tool dependencies](https://golang.google.cn/doc/modules/managing-dependencies#tools)
+
+### install
 ```zsh
-go get github.com/lopolopen/shoot@latest
-go get -tool github.com/lopolopen/shoot@latest
+go get -tool github.com/lopolopen/shoot/cmd/shoot@latest
 ```
 
+### generate instruction examples
 ```go
-// generate instruction examples
-
 //go:generate go tool shoot new -getset -json -type=YourType
 
 //go:generate go tool shoot new -getset -json -file $GOFILE
@@ -38,12 +40,12 @@ go generate			# run in the current directory
 go generate ./...	# recursively run in the current directory and its subdirectories
 ```
 
-## using go1.23- (at leat 1.18)
+## using go1.24- (at leat 1.18)
 
 ```zsh
-# installing this tool needs go1.23+
-# can be used by go1.23- project after installed
-go install github.com/lopolopen/shoot@latest
+go install github.com/lopolopen/shoot/cmd/shoot@latest
+
+go get github.com/lopolopen/shoot@latest	# manual installation is necessary for legacy-version projects
 ```
 
 ```go
@@ -52,11 +54,6 @@ go install github.com/lopolopen/shoot@latest
 //go:generate shoot new -getset -json -file $GOFILE
 
 //go:generate shoot enum -json -type=YourEnum
-```
-
-```zsh
-go generate
-go generate ./...
 ```
 
 ## generated file example:
