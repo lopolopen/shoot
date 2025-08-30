@@ -33,4 +33,8 @@ func main() {
 	if !shoot.IsEnum[enum.Light](5) {
 		fmt.Println("not")
 	}
+
+	if shoot.TryParseEnum("Green", &l) {
+		fmt.Println(l)
+	}
 }
