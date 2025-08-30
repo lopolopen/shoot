@@ -4,9 +4,9 @@ import (
 	"go/ast"
 	"log"
 	"regexp"
-	"slices"
 	"strings"
 
+	"github.com/lopolopen/shoot/internal/shoot"
 	"github.com/lopolopen/shoot/internal/transfer"
 )
 
@@ -47,7 +47,7 @@ func (g *Generator) makeOpt(typeName string) {
 							}
 
 							if len(g.data.NewList) != len(g.data.AllList)-len(g.data.ExportedList) {
-								if slices.Contains(g.data.NewList, name.Name) {
+								if shoot.Contains(g.data.NewList, name.Name) {
 									log.Fatalf("should not apply both instruction new and def(ault) to field %s of type %s", name.Name, typeName)
 								}
 							}

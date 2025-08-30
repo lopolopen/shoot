@@ -16,16 +16,18 @@ new [-new] [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-
 enum [-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]
 ```
 
-## 使用 go1.23+ （推荐）
+## 使用 go1.24+ （推荐）
 
+### 为什么是1.24
+[工具依赖文档](https://golang.google.cn/doc/modules/managing-dependencies#tools)
+
+### 安装
 ```zsh
-go get github.com/lopolopen/shoot@latest
 go get -tool github.com/lopolopen/shoot/cmd/shoot@latest
 ```
 
+### 成指令示例：
 ```go
-// 生成指令示例：
-
 //go:generate go tool shoot new -getset -json -type=YourType
 
 //go:generate go tool shoot new -getset -json -file $GOFILE
@@ -38,13 +40,12 @@ go generate 		# 在当前目录执行
 go generate ./...	# 递归当前目录及其子目录
 ```
 
-## 使用 go1.23- （至少1.18）
+## 使用 go1.24- （至少1.18）
 
 ```zsh
-# 安装此工具需要 go1.23 或以上版本
-# 安装后可用于 go1.23 以下版本的项目
-go get github.com/lopolopen/shoot@latest
 go install github.com/lopolopen/shoot/cmd/shoot@latest
+
+go get github.com/lopolopen/shoot@latest	# 低版本的项目中需要单独安装
 ```
 
 ```go
@@ -53,11 +54,6 @@ go install github.com/lopolopen/shoot/cmd/shoot@latest
 //go:generate shoot new -getset -json -file $GOFILE
 
 //go:generate shoot enum -json -type=YourEnum
-```
-
-```zsh
-go generate
-go generate ./...
 ```
 
 ## 生成文件展示：
