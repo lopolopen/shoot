@@ -16,7 +16,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/lopolopen/shoot/shoot"
+	"github.com/lopolopen/shoot/internal/shoot"
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/imports"
 )
@@ -25,9 +25,6 @@ const SubCmd = "new"
 
 //go:embed constructor.tmpl
 var tmplTxt string
-
-//go:embed option.tmpl
-var tmplTxtOpt string
 
 // Generator holds the state of the analysis.
 type Generator struct {
@@ -51,9 +48,9 @@ func (g *Generator) ParseFlags() {
 	option := sub.Bool("option", false, "generate functional option pattern constructor")
 	opt := sub.Bool("opt", false, "generate functional option pattern constructor (alias for -option)")
 	separate := sub.Bool("separate", false, "each type has its own go file")
-	s := sub.Bool("s", false, "each type has its own go file (alias for -separate)")
+	s := sub.Bool("s", false, "each type has its own go file (alias for separate)")
 	verbose := sub.Bool("verbose", false, "verbose output")
-	v := sub.Bool("v", false, "verbose output (alias for -separate)")
+	v := sub.Bool("v", false, "verbose output (alias for verbose)")
 
 	sub.Parse((flag.Args()[1:])) //e.g. new -getset -type=YourType ./testdata
 
@@ -138,9 +135,6 @@ func (g *Generator) Generate() map[string][]byte {
 			log.Fatalf("merge sources error: %s", err)
 		}
 		srcMap[g.fileName("", false)] = src
-	}
-	if g.data.Option {
-		srcMap[g.fileName("opt", true)] = g.generateOpt()
 	}
 	return srcMap
 }
