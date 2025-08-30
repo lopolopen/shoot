@@ -5,6 +5,8 @@ import (
 	"unicode"
 )
 
+func ID(x string) string { return x }
+
 func FirstLower(s string) string {
 	if s == "" {
 		return s

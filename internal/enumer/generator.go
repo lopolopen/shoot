@@ -16,7 +16,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/lopolopen/shoot/shoot"
+	"github.com/lopolopen/shoot/internal/shoot"
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/tools/imports"
 )
@@ -45,8 +45,10 @@ func (g *Generator) ParseFlags() {
 	fileName := sub.String("file", "", "the targe go file to generate, typical value: $GOFILE")
 	bit := sub.Bool("bit", false, "generate bitwise enumerations (alias for -bitwise)")
 	bitwise := sub.Bool("bitwise", false, "generate bitwise enumerations")
+	json := sub.Bool("json", false, "generate MarshalJSON/UnmarshalJSON method for the type")
+	text := sub.Bool("text", false, "generate MarshaText/UnmarshalText method for the type")
 	verbose := sub.Bool("verbose", false, "verbose output")
-	v := sub.Bool("v", false, "verbose output (alias for -separate)")
+	v := sub.Bool("v", false, "verbose output (alias for verbose)")
 
 	sub.Parse(flag.Args()[1:]) //e.g. enum -bit type=YourType ./testdata
 
@@ -84,6 +86,8 @@ func (g *Generator) ParseFlags() {
 			Verbose:   *v || *verbose,
 		},
 		bitwise: *bitwise || *bit,
+		json:    *json,
+		text:    *text,
 	}
 }
 
@@ -138,6 +142,8 @@ func (g *Generator) generate(typeName string) []byte {
 	g.data.PreRegister()
 	g.makeStr(typeName)
 	g.makeBitwize()
+	g.makeJson()
+	g.makeText()
 
 	var buff bytes.Buffer
 	tmpl, err := template.New(SubCmd).Funcs(g.data.Transfers()).Parse(tmplTxt)
@@ -145,6 +151,9 @@ func (g *Generator) generate(typeName string) []byte {
 		log.Fatalf("parsing template: %s", err)
 	}
 	g.data.TypeName = typeName
+	if g.flags.Verbose {
+		log.Printf("[debug]:\n%+v", g.data)
+	}
 	err = tmpl.Execute(&buff, g.data)
 	if err != nil {
 		log.Fatalf("executing template: %s", err)
@@ -202,11 +211,25 @@ func (g *Generator) parseTypeNames() {
 	var typeNames []string
 	for _, f := range g.pkg.files {
 		ast.Inspect(f.file, func(n ast.Node) bool {
-			ts, ok := n.(*ast.TypeSpec)
+			decl, ok := n.(*ast.GenDecl)
 			if !ok {
 				return true
 			}
-			typeNames = append(typeNames, ts.Name.Name)
+
+			if decl.Tok == token.TYPE {
+				for _, spec := range decl.Specs {
+					ts, ok := spec.(*ast.TypeSpec)
+					if !ok {
+						continue
+					}
+					if ts.Assign.IsValid() {
+						log.Printf("[warn:] alias type %s will be ignored", ts.Name.Name)
+					} else {
+						typeNames = append(typeNames, ts.Name.Name)
+					}
+				}
+			}
+
 			return false
 		})
 	}
