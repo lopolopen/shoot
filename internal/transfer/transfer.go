@@ -16,35 +16,21 @@ func FirstLower(s string) string {
 }
 
 func ToCamelCase(s string) string {
-	if s == "" {
+	if len(s) == 0 {
 		return s
 	}
-	parts := strings.Split(s, "_")
-	for i, part := range parts {
-		if i == 0 {
-			parts[i] = strings.ToLower(part)
-		} else {
-			if len(part) > 0 {
-				runes := []rune(part)
-				runes[0] = unicode.ToUpper(runes[0])
-				parts[i] = string(runes)
-			}
-		}
-	}
-	return strings.Join(parts, "")
+
+	runes := []rune(s)
+	runes[0] = unicode.ToLower(runes[0])
+	return string(runes)
 }
 
 func ToPascalCase(s string) string {
-	if s == "" {
+	if len(s) == 0 {
 		return s
 	}
-	parts := strings.Split(s, "_")
-	for i, part := range parts {
-		if len(part) > 0 {
-			runes := []rune(part)
-			runes[0] = unicode.ToUpper(runes[0])
-			parts[i] = string(runes)
-		}
-	}
-	return strings.Join(parts, "")
+
+	runes := []rune(s)
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }

@@ -22,10 +22,10 @@ func ParseEnum[T Enumer[T]](str string) (T, error) {
 	var t T
 	m := t.ValueMap()
 	t, ok := m[str]
-	if ok {
-		return t, nil
+	if !ok {
+		return t, fmt.Errorf("requested value '%s' was not found", str)
 	}
-	return t, fmt.Errorf("requested value '%s' was not found", str)
+	return t, nil
 }
 
 // TryParseEnum is a safe variant of ParseEnum.
