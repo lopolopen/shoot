@@ -178,7 +178,7 @@ func (g *Generator) generate(typeName string) []byte {
 	if g.flags.verbose {
 		log.Printf("[debug]:\n%s", string(src))
 	}
-	src, err = format.Source(src)
+	src, err = formatSrc(src)
 	if err != nil {
 		log.Fatalf("format source: %s", err)
 	}
@@ -234,6 +234,12 @@ func (g *Generator) parseTypeNames() {
 			if !ok {
 				return true
 			}
+
+			_, ok = ts.Type.(*ast.StructType)
+			if !ok {
+				return true
+			}
+
 			typeNames = append(typeNames, ts.Name.Name)
 			return false
 		})

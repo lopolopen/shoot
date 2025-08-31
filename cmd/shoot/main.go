@@ -8,12 +8,14 @@ import (
 
 	"github.com/lopolopen/shoot/internal/constructor"
 	"github.com/lopolopen/shoot/internal/enumer"
+	"github.com/lopolopen/shoot/internal/restclient"
 	"github.com/lopolopen/shoot/internal/shoot"
 )
 
 var subCmdMap = map[string]string{
-	constructor.SubCmd: "[-new] [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
-	enumer.SubCmd:      "[-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]",
+	constructor.SubCmd: "[-new] [-opt] [-getset] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+	enumer.SubCmd:      "[-json] [-text] -[bit] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-v]",
+	restclient.SubCmd:  "[-type=<Type> | -file=<GoFile>] [dir] [-v]",
 }
 
 func main() {
@@ -46,6 +48,8 @@ func main() {
 		g = constructor.New()
 	case enumer.SubCmd:
 		g = enumer.New()
+	case restclient.SubCmd:
+		g = restclient.New()
 	default:
 		flag.Usage()
 		os.Exit(2)

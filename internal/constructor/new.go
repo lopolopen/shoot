@@ -29,8 +29,14 @@ func (g *Generator) makeNew(typeName string) {
 			if !ok {
 				return true
 			}
+
 			if ts.Name.Name != typeName {
 				return false
+			}
+
+			_, ok = ts.Type.(*ast.StructType)
+			if !ok {
+				log.Fatalf("type %s is not a struct type", ts.Name.Name)
 			}
 
 			imports = buildImports(f.file.Imports)
