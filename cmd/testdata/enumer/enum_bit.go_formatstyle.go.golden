@@ -17,13 +17,13 @@ func _() {
 
 }
 
-const _formatstyle_all = None | Bold | Italic | Underline | Strikethrough | 0
+const _formatStyle_all = None | Bold | Italic | Underline | Strikethrough | 0
 
-var _formatstyle_values = []FormatStyle{None, Bold, Italic, Underline, Strikethrough}
+var _formatStyle_values = []FormatStyle{None, Bold, Italic, Underline, Strikethrough}
 
-var _formatstyle_strings = []string{"None", "Bold", "Italic", "Underline", "Strikethrough"}
+var _formatStyle_strings = []string{"None", "Bold", "Italic", "Underline", "Strikethrough"}
 
-var _formatstyle_string_map = map[FormatStyle]string{
+var _formatStyle_string_map = map[FormatStyle]string{
 	None:          "None",
 	Bold:          "Bold",
 	Italic:        "Italic",
@@ -31,7 +31,7 @@ var _formatstyle_string_map = map[FormatStyle]string{
 	Strikethrough: "Strikethrough",
 }
 
-var _formatstyle_value_map = map[string]FormatStyle{
+var _formatStyle_value_map = map[string]FormatStyle{
 	"None":          None,
 	"Bold":          Bold,
 	"Italic":        Italic,
@@ -41,18 +41,18 @@ var _formatstyle_value_map = map[string]FormatStyle{
 
 // String returns the string value of type FormatStyle
 func (f FormatStyle) String() string {
-	str, ok := _formatstyle_string_map[f]
+	str, ok := _formatStyle_string_map[f]
 	if ok {
 		return str
 	}
-	if f < 0 || f > _formatstyle_all {
+	if f < 0 || f > _formatStyle_all {
 		return fmt.Sprintf("%d", f)
 	}
 
 	var buf bytes.Buffer
 	f_ := f
-	for i_ := 0; i_ < len(_formatstyle_values); i_++ {
-		v_ := _formatstyle_values[i_]
+	for i_ := 0; i_ < len(_formatStyle_values); i_++ {
+		v_ := _formatStyle_values[i_]
 		if v_ == 0 {
 			continue
 		}
@@ -60,7 +60,7 @@ func (f FormatStyle) String() string {
 			break
 		}
 		if f_.Has(v_) {
-			fmt.Fprintf(&buf, ", %s", _formatstyle_map[v_])
+			fmt.Fprintf(&buf, ", %s", _formatStyle_map[v_])
 			f_ = f_.Remove(v_)
 		}
 	}
@@ -72,19 +72,19 @@ func (f FormatStyle) String() string {
 }
 
 func (f FormatStyle) Values() []FormatStyle {
-	return _formatstyle_values
+	return _formatStyle_values
 }
 
 func (f FormatStyle) Strings() []string {
-	return _formatstyle_strings
+	return _formatStyle_strings
 }
 
 func (f FormatStyle) ValueMap() map[string]FormatStyle {
-	return _formatstyle_value_map
+	return _formatStyle_value_map
 }
 
 func (f FormatStyle) StringMap() map[FormatStyle]string {
-	return _formatstyle_string_map
+	return _formatStyle_string_map
 }
 
 // Has checks if a specific flag is present in the FormatStyle set
