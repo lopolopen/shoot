@@ -214,6 +214,13 @@ func parsePath(doc string) (string, string, []string, bool) {
 	method := strings.ToUpper(ms[1])
 	path := strings.TrimSpace(ms[2])
 
+	regPath := regexp.MustCompile(`^("[^"]+"|[^"]+)$`)
+	if !regPath.MatchString(path) {
+		log.Fatalf("bad path format: %s", path)
+	}
+
+	path = strings.Trim(path, `"`)
+
 	regPathParam := regexp.MustCompile(`{(\w+)}`)
 	psLst := regPathParam.FindAllStringSubmatch(path, -1)
 	var pathParams []string

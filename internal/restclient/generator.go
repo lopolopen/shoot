@@ -44,6 +44,8 @@ func (g *Generator) ParseFlags() {
 	fileName := sub.String("file", "", "the targe go file to generate, typical value: $GOFILE")
 	verbose := sub.Bool("verbose", false, "verbose output")
 	v := sub.Bool("v", false, "verbose output (alias for verbose)")
+	raw := sub.Bool("raw", false, "raw source")
+	r := sub.Bool("r", false, "raw source (alias for raw)")
 
 	sub.Parse((flag.Args()[1:])) //e.g. rest -type=YourType ./testdata
 
@@ -79,6 +81,7 @@ func (g *Generator) ParseFlags() {
 			FileName:  *fileName,
 			Dir:       dir,
 			Verbose:   *v || *verbose,
+			Raw:       *r || *raw,
 		},
 	}
 }
@@ -149,8 +152,13 @@ func (g *Generator) generate(typeName string) []byte {
 	}
 	src := buff.Bytes()
 	if g.flags.Verbose {
-		log.Printf("[debug]:\n%s", string(src))
+		log.Printf("[debug:]\n%s", string(src))
 	}
+
+	if g.flags.Raw {
+		return src //typically used for debugging
+	}
+
 	src, err = formatSrc(src)
 	if err != nil {
 		log.Fatalf("format source: %s", err)

@@ -25,6 +25,9 @@ func (g *Generator) makeStr(typeName string) {
 					if !ok {
 						continue
 					}
+
+					//todo:
+
 					if ts.Assign.IsValid() {
 						if typeName == ts.Name.Name {
 							log.Fatalf("type %s should not be an alias", typeName)

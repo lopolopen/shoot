@@ -10,6 +10,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"go/types"
 	"log"
 	"os"
 	"path/filepath"
@@ -222,6 +223,26 @@ func (g *Generator) parseTypeNames() {
 					if !ok {
 						continue
 					}
+
+					obj := g.pkg.pkg.TypesInfo.Defs[ts.Name]
+					if obj == nil {
+						continue
+					}
+
+					typ := obj.Type()
+					under := typ.Underlying()
+
+					basic, ok := under.(*types.Basic)
+					if !ok {
+						continue
+					}
+
+					kind := basic.Kind()
+					if kind != types.Int && kind != types.Uint &&
+						kind != types.Int32 && kind != types.Uint32 {
+						continue
+					}
+
 					if ts.Assign.IsValid() {
 						log.Printf("[warn:] alias type %s will be ignored", ts.Name.Name)
 					} else {
@@ -347,4 +368,12 @@ func formatSrc(src []byte) ([]byte, error) {
 		return nil, err
 	}
 	return src, nil
+}
+
+func isIntegerType(t types.Type) bool {
+	switch u := t.Underlying().(type) {
+	case *types.Basic:
+		return u.Info()&types.IsInteger != 0
+	}
+	return false
 }
