@@ -8,6 +8,7 @@ import (
 	"log"
 	"regexp"
 
+	"github.com/lopolopen/shoot/internal/shoot"
 	"github.com/lopolopen/shoot/internal/transfer"
 )
 
@@ -22,6 +23,11 @@ func (g *Generator) makeNew(typeName string) {
 	var embedList []string
 	typeMap := make(map[string]string)
 	xMap := make(map[string]string)
+
+	pkgPath := g.pkg.pkg.PkgPath
+	if pkgPath == shoot.SelfPkgPath {
+		g.data.Self = true
+	}
 
 	for _, f := range g.pkg.files {
 		ast.Inspect(f.file, func(n ast.Node) bool {

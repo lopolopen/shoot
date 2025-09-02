@@ -2,93 +2,124 @@
 
 package {{.PackageName}}
 
-type _{{.TypeName}} struct{
+import (
+    "github.com/lopolopen/shoot"
+)
+
+type {{camelCase .TypeName}} struct{
     client *http.Client
 	conf   *shoot.RestConf
 }
 
 {{range $item := .MethodList}}
-func (c *_{{$.TypeName}}) {{index $.SigMap .}} {
+func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     {{- $r := index $.ResultTypeMap . -}}
     {{- $return := "err" -}}
     {{- if $r -}}
     {{- $return = "nil, err" -}}
-    {{- end }}
-    path := "{{index $.PathMap .}}"
-    
-    {{$pms := index $.PathParamsMap .}}
-    {{if $pms}}
-    {{range $pms -}}
+    {{- end}}
+    path_ := "{{index $.PathMap .}}"{{"\n"}}
+    {{- $pms := index $.PathParamsMap . -}}
+    {{- if $pms -}}
+    {{- range $pms -}}
     {{- $key := . -}}
     {{- $alias := index (index $.AliasMap $item) . -}}
     {{- if $alias -}}{{- $key = $alias -}}{{- end -}}
-    path = strings.Replace(path, "{{printf "{%s}" $key}}", fmt.Sprintf("%v", {{.}}), 1){{"\n"}}
+    path_ = strings.Replace(path_, "{{printf "{%s}" $key}}", fmt.Sprintf("%v", {{.}}), 1){{"\n"}}
     {{- end}}
     {{end}}
 
-    url, err := url.JoinPath(c.conf.BaseURL(), path)
+    url_, err := url.JoinPath(c.conf.BaseURL(), path_)
     if err != nil {
         return {{$return}}
     }
-    {{$m := index $.HTTPMethodMap .}}
+    {{$httpmethod := index $.HTTPMethodMap $item}}
     {{$body := "nil"}}
-    {{if eq $m "POST"}}
+    {{if in $httpmethod $.BodyHTTPMethods}}
     {{$p := index $.BodyParamMap .}}
-    bodyJson, err := json.Marshal({{$p}})
+    bodyJson_, err := json.Marshal({{$p}})
     if err != nil {
         return {{$return}}
     }
-    {{$body = "bytes.NewReader(bodyJson)"}}
+    {{$body = "bytes.NewReader(bodyJson_)"}}
     {{end}}
-    req, err := http.NewRequestWithContext(ctx, "{{$m}}", url, {{$body}})
-    if err != nil {
-        return {{$return}}
-    }
 
-    {{if eq $m "GET"}}
-    {{$qms := index $.QueryParamsMap .}}
-    {{if $qms}}
-    query := req.URL.Query() 
-    {{range $qms -}}
-    {{- $key := . -}}
-    {{- $alias := index (index $.AliasMap $item) . -}}
-    {{- if $alias -}}{{- $key = $alias -}}{{- end -}}
-    query.Set("{{$key}}", fmt.Sprintf("%v", {{.}})){{"\n"}}
-    {{- end}}req.URL.RawQuery = query.Encode()
-    {{end}}
-    {{end}}
-    
-    req.Header.Add("Accept", "application/json")
+    {{if $.CtxParamMap}}
+    req_, err := http.NewRequestWithContext({{index $.CtxParamMap .}}, "{{$httpmethod}}", url_, {{$body}})
+    {{else}}
+    req_, err := http.NewRequest("{{$httpmethod}}", url_, {{$body}})
+    {{end -}}
+    if err != nil {
+        return {{$return}}
+    }{{- "\n" -}}
 
-    
-    resp, err := c.client.Do(req)
+    {{- "\n" -}}
+    {{- if not (in $httpmethod $.BodyHTTPMethods) -}}
+    {{- $qs := index $.QueryParamsMap $item -}}
+    {{- $qd := index $.QueryDictMap $item -}}
+    {{- if or $qs $qd -}}
+    query_ := req_.URL.Query(){{"\n"}}
+    {{- end -}}
+    {{- if $qs -}}
+    {{- range $key := $qs -}}
+    {{- $alias := index (index $.AliasMap $item) $key -}}
+    {{- if not $alias}}{{$alias = $key}}{{end -}}
+    query_.Set("{{$alias}}", fmt.Sprintf("%v", {{$key}})){{"\n"}}
+    {{- end -}}
+    {{- end -}}
+    {{- if $qd -}}
+    for k, v := range {{$qd}} {
+        query_.Set(k, fmt.Sprintf("%v", v))
+    }{{"\n"}}
+    {{- end -}}
+    {{- if or $qs $qd -}}
+    req_.URL.RawQuery = query_.Encode(){{"\n"}}
+    {{- end -}}
+    {{- end -}}
+
+    {{- "\n" -}}
+    {{- range $key, $value := (index $.DefaultHeaders $httpmethod) -}}
+    req_.Header.Add("{{$key}}", "{{$value}}"){{"\n"}}
+    {{- end}}
+
+    resp_, err := c.client.Do(req_)
     if err != nil {
         return {{$return}}
     }
-    defer resp.Body.Close()
+    defer resp_.Body.Close()
     {{if $r}}
-    body, err := io.ReadAll(resp.Body)
+    body_, err := io.ReadAll(resp_.Body)
 	if err != nil {
 		return {{$return}}
 	}
-    var {{camelCase $r}}_ {{$r}}
-    err = json.Unmarshal(body, &{{camelCase $r}}_)
+    var result_ {{$r}}
+    err = json.Unmarshal(body_, &result_)
     if err != nil {
 		return {{$return}}
 	}
-    return &{{camelCase $r}}_, nil
+    return &result_, nil
     {{else}}
     return nil
     {{- end -}}
 }
 {{end}}
 
+// ConfigHTTPClient allows customization of the underlying http.Client.
+func (c *{{camelCase .TypeName}}) ConfigHTTPClient(config func(*http.Client)) {{.TypeName}} {
+	config(c.client)
+    return c
+}
+
+// ShootRest exists solely to fulfill the RestShooter interface contract.
+func (c *{{camelCase .TypeName}}) ShootRest() { /*noop*/ }
+
 func init() {
-	shoot.Register[{{.TypeName}}](func(conf shoot.RestConf) shoot.RestClient {
-		return &_{{.TypeName}}{
+	shoot.Register(func(conf shoot.RestConf) {{.TypeName}} {
+		return &{{camelCase .TypeName}}{
 			conf: &conf,
 			client: &http.Client{
 				Timeout: time.Duration(conf.Timeout()) * time.Second,
+                Transport: conf.BuildMiddleware(),
 			},
 		}
 	})

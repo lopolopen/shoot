@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/lopolopen/shoot/internal/constructor"
 	"github.com/lopolopen/shoot/internal/enumer"
@@ -63,7 +64,12 @@ func main() {
 		fileNames = append(fileNames, fname)
 	}
 
-	log.Println("go generate successfully:")
+	if len(srcMap) == 0 {
+		log.Printf("[warn:] nothing generated: [%s]", strings.Join(flag.Args(), " "))
+		return
+	}
+
+	log.Printf("go generate successfully: [%s]\n", strings.Join(flag.Args(), " "))
 	for _, fn := range fileNames {
 		log.Printf("\t%s\n", fn)
 	}

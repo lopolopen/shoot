@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"enumersample/enum"
+	"enumersample/enums"
 	"fmt"
 
 	"github.com/lopolopen/shoot"
@@ -10,15 +10,15 @@ import (
 
 type X struct {
 	Name  string
-	Light enum.Light
+	Light enums.Light
 }
 
 func main() {
-	fmt.Printf("LightRed: %s\n", enum.LightRed)
+	fmt.Printf("LightRed: %s\n", enums.LightRed)
 
 	x := X{
 		Name:  "x",
-		Light: enum.LightGreen,
+		Light: enums.LightGreen,
 	}
 	xJson, _ := json.Marshal(x)
 	fmt.Println(string(xJson))
@@ -27,10 +27,10 @@ func main() {
 	json.Unmarshal(xJson, &x2)
 	fmt.Println(x2)
 
-	l, _ := shoot.ParseEnum[enum.Light]("Red")
+	l, _ := shoot.ParseEnum[enums.Light]("Red")
 	fmt.Println(l)
 
-	if !shoot.IsEnum[enum.Light](5) {
+	if !shoot.IsEnum[enums.Light](5) {
 		fmt.Println("not")
 	}
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 var (
@@ -35,6 +36,7 @@ func setHandler(w http.ResponseWriter, r *http.Request) {
 	mu.Lock()
 	store[req.Key] = req.Value
 	mu.Unlock()
+	time.Sleep(time.Second)
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -49,5 +51,6 @@ func getHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	resp := map[string]string{"key": key, "value": value}
 	w.Header().Set("Content-Type", "application/json")
+	time.Sleep(time.Second)
 	json.NewEncoder(w).Encode(resp)
 }

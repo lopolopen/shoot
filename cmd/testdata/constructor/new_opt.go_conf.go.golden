@@ -45,3 +45,6 @@ func PortOfConf(port_ int) shoot.Option[Conf, *Conf] {
 func (c *Conf) SetDefault() {
 	c.port = 80
 }
+
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (c Conf) ShootNew() { /*noop*/ }

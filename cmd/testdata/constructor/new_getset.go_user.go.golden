@@ -40,3 +40,6 @@ func (u *User) SetName(name_ string) {
 func (u *User) SetAge(age_ int) {
 	u.age = age_
 }
+
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (u User) ShootNew() { /*noop*/ }

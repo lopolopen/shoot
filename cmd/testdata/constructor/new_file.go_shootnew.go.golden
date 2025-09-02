@@ -10,6 +10,9 @@ func NewF1(fa string, fb string) *F1 {
 	}
 }
 
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (f F1) ShootNew() { /*noop*/ }
+
 // NewF2 constructs a new instance of type F2
 func NewF2(fc string) *F2 {
 	return &F2{
@@ -17,9 +20,15 @@ func NewF2(fc string) *F2 {
 	}
 }
 
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (f F2) ShootNew() { /*noop*/ }
+
 // NewF3 constructs a new instance of type F3
 func NewF3(fd int) *F3 {
 	return &F3{
 		fd: fd,
 	}
 }
+
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (f F3) ShootNew() { /*noop*/ }

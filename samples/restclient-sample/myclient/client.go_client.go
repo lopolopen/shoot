@@ -10,129 +10,101 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"time"
 
 	"github.com/lopolopen/shoot"
 )
 
-type _Client struct {
+type client struct {
 	client *http.Client
 	conf   *shoot.RestConf
 }
 
-func (c *_Client) Get(ctx context.Context, key string) (*KV, error) {
-	path := "/get"
+func (c *client) Get(ctx context.Context, key string) (*KV, error) {
+	path_ := "/get"
 
-	url, err := url.JoinPath(c.conf.BaseURL(), path)
+	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
 	if err != nil {
 		return nil, err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req_, err := http.NewRequestWithContext(ctx, "GET", url_, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	query := req.URL.Query()
-	query.Set("key", fmt.Sprintf("%v", key))
-	req.URL.RawQuery = query.Encode()
+	query_ := req_.URL.Query()
+	query_.Set("key", fmt.Sprintf("%v", key))
+	req_.URL.RawQuery = query_.Encode()
 
-	req.Header.Add("Accept", "application/json")
+	req_.Header.Add("Accept", "application/json")
+	req_.Header.Add("Authorization", "Basic dXNlcm5hbWU6cGFzc3dvcmQ=")
 
-	resp, err := c.client.Do(req)
+	resp_, err := c.client.Do(req_)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer resp_.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body_, err := io.ReadAll(resp_.Body)
 	if err != nil {
 		return nil, err
 	}
-	var kV_ KV
-	err = json.Unmarshal(body, &kV_)
+	var result_ KV
+	err = json.Unmarshal(body_, &result_)
 	if err != nil {
 		return nil, err
 	}
-	return &kV_, nil
+	return &result_, nil
 }
 
-func (c *_Client) Set(ctx context.Context, kv *KV) error {
-	path := "/set"
+func (c *client) Set(ctx context.Context, kv *KV) error {
+	path_ := "/set"
 
-	url, err := url.JoinPath(c.conf.BaseURL(), path)
+	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
 	if err != nil {
 		return err
 	}
 
-	bodyJson, err := json.Marshal(kv)
+	bodyJson_, err := json.Marshal(kv)
 	if err != nil {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(bodyJson))
+	req_, err := http.NewRequestWithContext(ctx, "POST", url_, bytes.NewReader(bodyJson_))
 	if err != nil {
 		return err
 	}
 
-	req.Header.Add("Accept", "application/json")
+	req_.Header.Add("Accept", "application/json")
+	req_.Header.Add("Authorization", "Basic dXNlcm5hbWU6cGFzc3dvcmQ=")
+	req_.Header.Add("Content-Type", "application/json")
 
-	resp, err := c.client.Do(req)
+	resp_, err := c.client.Do(req_)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer resp_.Body.Close()
 
 	return nil
 }
 
-func (c *_Client) GetUser(ctx context.Context, userID string, q1 int, q2 string) (*Book, error) {
-	path := "/users/{id}"
-
-	path = strings.Replace(path, "{id}", fmt.Sprintf("%v", userID), 1)
-
-	url, err := url.JoinPath(c.conf.BaseURL(), path)
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	query := req.URL.Query()
-	query.Set("a1", fmt.Sprintf("%v", q1))
-	query.Set("q2", fmt.Sprintf("%v", q2))
-	req.URL.RawQuery = query.Encode()
-
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := c.client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	var book_ Book
-	err = json.Unmarshal(body, &book_)
-	if err != nil {
-		return nil, err
-	}
-	return &book_, nil
+// ConfigHTTPClient allows customization of the underlying http.Client.
+func (c *client) ConfigHTTPClient(config func(*http.Client)) Client {
+	config(c.client)
+	return c
 }
 
+// ShootRest exists solely to fulfill the RestShooter interface contract.
+func (c *client) ShootRest() { /*noop*/ }
+
 func init() {
-	shoot.Register[Client](func(conf shoot.RestConf) shoot.RestClient {
-		return &_Client{
+	shoot.Register(func(conf shoot.RestConf) Client {
+		return &client{
 			conf: &conf,
 			client: &http.Client{
-				Timeout: time.Duration(conf.Timeout()) * time.Second,
+				Timeout:   time.Duration(conf.Timeout()) * time.Second,
+				Transport: conf.BuildMiddleware(),
 			},
 		}
 	})

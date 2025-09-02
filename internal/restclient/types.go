@@ -10,17 +10,21 @@ import (
 
 type Data struct {
 	shoot.BaseData
-	MethodList     []string
-	PostList       []string
-	PutList        []string
-	SigMap         map[string]string
-	HTTPMethodMap  map[string]string
-	PathMap        map[string]string
-	AliasMap       map[string]map[string]string
-	PathParamsMap  map[string][]string
-	QueryParamsMap map[string][]string
-	ResultTypeMap  map[string]string
-	BodyParamMap   map[string]string
+	MethodList []string
+	// PostList        []string
+	// PutList         []string
+	SigMap          map[string]string
+	HTTPMethodMap   map[string]string
+	PathMap         map[string]string
+	AliasMap        map[string]map[string]string
+	PathParamsMap   map[string][]string
+	QueryParamsMap  map[string][]string
+	ResultTypeMap   map[string]string
+	BodyParamMap    map[string]string
+	QueryDictMap    map[string]string
+	DefaultHeaders  map[string]map[string]string
+	CtxParamMap     map[string]string
+	BodyHTTPMethods []string
 }
 
 type Flags struct {
