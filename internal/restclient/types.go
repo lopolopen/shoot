@@ -21,6 +21,9 @@ type Data struct {
 	QueryParamsMap map[string][]string
 	ResultTypeMap  map[string]string
 	BodyParamMap   map[string]string
+	QueryDictMap   map[string]string
+	DefaultHeaders map[string]map[string]string
+	CtxParamMap    map[string]string
 }
 
 type Flags struct {

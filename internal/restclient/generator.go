@@ -6,10 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/format"
-	"go/parser"
-	"go/printer"
-	"go/token"
+	"go/types"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,7 +15,6 @@ import (
 
 	"github.com/lopolopen/shoot/internal/shoot"
 	"golang.org/x/tools/go/packages"
-	"golang.org/x/tools/imports"
 )
 
 const SubCmd = "rest"
@@ -44,6 +40,10 @@ func (g *Generator) ParseFlags() {
 	fileName := sub.String("file", "", "the targe go file to generate, typical value: $GOFILE")
 	verbose := sub.Bool("verbose", false, "verbose output")
 	v := sub.Bool("v", false, "verbose output (alias for verbose)")
+	separate := sub.Bool("separate", false, "each type has its own go file")
+	s := sub.Bool("s", false, "each type has its own go file (alias for separate)")
+	raw := sub.Bool("raw", false, "raw source")
+	r := sub.Bool("r", false, "raw source (alias for raw)")
 
 	sub.Parse((flag.Args()[1:])) //e.g. rest -type=YourType ./testdata
 
@@ -79,6 +79,8 @@ func (g *Generator) ParseFlags() {
 			FileName:  *fileName,
 			Dir:       dir,
 			Verbose:   *v || *verbose,
+			Separate:  *s || *separate || *fileName == "",
+			Raw:       *r || *raw,
 		},
 	}
 }
@@ -110,7 +112,7 @@ func (g *Generator) Generate() map[string][]byte {
 	}
 
 	srcMap := make(map[string][]byte)
-	if true {
+	if g.flags.Separate {
 		//each type has its own separate file
 		for _, typName := range g.flags.TypeNames {
 			srcMap[g.fileName(typName, false)] = g.generate(typName)
@@ -121,7 +123,7 @@ func (g *Generator) Generate() map[string][]byte {
 		for _, typName := range g.flags.TypeNames {
 			srcList = append(srcList, g.generate(typName))
 		}
-		src, err := mergeGoSources(srcList...)
+		src, err := shoot.MergeSources(srcList...)
 		if err != nil {
 			log.Fatalf("merge sources error: %s", err)
 		}
@@ -149,9 +151,14 @@ func (g *Generator) generate(typeName string) []byte {
 	}
 	src := buff.Bytes()
 	if g.flags.Verbose {
-		log.Printf("[debug]:\n%s", string(src))
+		log.Printf("[debug:]\n%s", string(src))
 	}
-	src, err = formatSrc(src)
+
+	if g.flags.Raw {
+		return src //typically used for debugging
+	}
+
+	src, err = shoot.FormatSrc(src)
 	if err != nil {
 		log.Fatalf("format source: %s", err)
 	}
@@ -197,32 +204,19 @@ func (g *Generator) addPackage(pkg *packages.Package) {
 }
 
 func (g *Generator) parseTypeNames() {
-	// var typeNames []string
-	// for _, f := range g.pkg.files {
-	// 	ast.Inspect(f.file, func(n ast.Node) bool {
-	// 		decl, ok := n.(*ast.GenDecl)
-	// 		if !ok {
-	// 			return true
-	// 		}
+	var typeNames []string
+	for _, f := range g.pkg.files {
+		ast.Inspect(f.file, func(n ast.Node) bool {
+			if !g.testNode("", n) {
+				return true
+			}
 
-	// 		if decl.Tok == token.TYPE {
-	// 			for _, spec := range decl.Specs {
-	// 				ts, ok := spec.(*ast.TypeSpec)
-	// 				if !ok {
-	// 					continue
-	// 				}
-	// 				if ts.Assign.IsValid() {
-	// 					log.Printf("[warn:] alias type %s will be ignored", ts.Name.Name)
-	// 				} else {
-	// 					typeNames = append(typeNames, ts.Name.Name)
-	// 				}
-	// 			}
-	// 		}
-
-	// 		return false
-	// 	})
-	// }
-	// g.flags.TypeNames = typeNames
+			ts, _ := n.(*ast.TypeSpec)
+			typeNames = append(typeNames, ts.Name.Name)
+			return false
+		})
+	}
+	g.flags.TypeNames = typeNames
 }
 
 func getGoFile(pkg *packages.Package, typeName string) string {
@@ -249,91 +243,38 @@ func (g *Generator) fileName(name string, pkgScope bool) string {
 	return fmt.Sprintf("%s_%s.go", gofile, strings.ToLower(name))
 }
 
-func mergeGoSources(sources ...[]byte) ([]byte, error) {
-	if len(sources) == 0 {
-		return nil, nil
+func (g *Generator) testNode(typeName string, node ast.Node) bool {
+	ts, ok := node.(*ast.TypeSpec)
+	if !ok {
+		return false
 	}
 
-	fset := token.NewFileSet()
-	var files []*ast.File
+	if typeName != "" && ts.Name.Name != typeName {
+		return false
+	}
 
-	for i, src := range sources {
-		file, err := parser.ParseFile(fset, fmt.Sprintf("src%d.go", i), src, parser.ParseComments)
-		if err != nil {
-			return nil, fmt.Errorf("parse src%d.go: %w", i, err)
+	iface, ok := ts.Type.(*ast.InterfaceType)
+	if !ok {
+		return false
+	}
+
+	isRestClient := false
+	for _, field := range iface.Methods.List {
+		if len(field.Names) > 0 {
+			continue
 		}
-		files = append(files, file)
-	}
 
-	pkgName := files[0].Name.Name
-
-	importMap := map[string]bool{}
-	var importDecls []ast.Decl
-	for _, f := range files {
-		for _, imp := range f.Imports {
-			if !importMap[imp.Path.Value] {
-				importMap[imp.Path.Value] = true
-				importDecls = append(importDecls, &ast.GenDecl{
-					Tok:   token.IMPORT,
-					Specs: []ast.Spec{imp},
-				})
-			}
+		typ := g.pkg.pkg.TypesInfo.Types[field.Type].Type
+		named, ok := typ.(*types.Named)
+		if !ok {
+			continue
 		}
-	}
-
-	var otherDecls []ast.Decl
-	for _, f := range files {
-		for _, decl := range f.Decls {
-			if gen, ok := decl.(*ast.GenDecl); ok && gen.Tok == token.IMPORT {
-				continue
-			}
-			otherDecls = append(otherDecls, decl)
+		obj := named.Obj()
+		pkgPath := obj.Pkg().Path()
+		if pkgPath == shoot.SelfPkgPath && obj.Name() == "RestClient" {
+			isRestClient = true
+			break
 		}
 	}
-
-	var buf bytes.Buffer
-	// header (first line comment)
-	if len(files[0].Comments) > 0 {
-		fmt.Fprint(&buf, "// ")
-		fmt.Fprintln(&buf, files[0].Comments[0].Text())
-		fmt.Fprintln(&buf)
-	}
-	// package
-	fmt.Fprintf(&buf, "package %s\n\n", pkgName)
-	// imports
-	if len(importDecls) > 0 {
-		for _, decl := range importDecls {
-			printer.Fprint(&buf, fset, decl)
-			fmt.Fprintln(&buf)
-		}
-		fmt.Fprintln(&buf)
-	}
-	// decls
-	for _, decl := range otherDecls {
-		printer.Fprint(&buf, fset, decl)
-		fmt.Fprintln(&buf)
-	}
-
-	// return buf.Bytes(), nil
-
-	out, err := format.Source(buf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("format merged source: %w", err)
-	}
-	return out, nil
-}
-
-func formatSrc(src []byte) ([]byte, error) {
-	// format imports
-	src, err := imports.Process("./_.go", src, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// format source code
-	src, err = format.Source(src)
-	if err != nil {
-		return nil, err
-	}
-	return src, nil
+	return isRestClient
 }

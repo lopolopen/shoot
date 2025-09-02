@@ -6,10 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/format"
-	"go/parser"
-	"go/printer"
-	"go/token"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,7 +14,6 @@ import (
 
 	"github.com/lopolopen/shoot/internal/shoot"
 	"golang.org/x/tools/go/packages"
-	"golang.org/x/tools/imports"
 )
 
 const SubCmd = "new"
@@ -130,7 +125,7 @@ func (g *Generator) Generate() map[string][]byte {
 		for _, typName := range g.flags.typeNames {
 			srcList = append(srcList, g.generate(typName))
 		}
-		src, err := mergeGoSources(srcList...)
+		src, err := shoot.MergeSources(srcList...)
 		if err != nil {
 			log.Fatalf("merge sources error: %s", err)
 		}
@@ -178,9 +173,9 @@ func (g *Generator) generate(typeName string) []byte {
 	if g.flags.verbose {
 		log.Printf("[debug]:\n%s", string(src))
 	}
-	src, err = formatSrc(src)
+	src, err = shoot.FormatSrc(src)
 	if err != nil {
-		log.Fatalf("format source: %s", err)
+		log.Fatalf("format source: %s, subcmd: %s, type: %s", err, SubCmd, typeName)
 	}
 	return src
 }
@@ -245,93 +240,4 @@ func (g *Generator) parseTypeNames() {
 		})
 	}
 	g.flags.typeNames = typeNames
-}
-
-func mergeGoSources(sources ...[]byte) ([]byte, error) {
-	if len(sources) == 0 {
-		return nil, nil
-	}
-
-	fset := token.NewFileSet()
-	var files []*ast.File
-
-	for i, src := range sources {
-		file, err := parser.ParseFile(fset, fmt.Sprintf("src%d.go", i), src, parser.ParseComments)
-		if err != nil {
-			return nil, fmt.Errorf("parse src%d.go: %w", i, err)
-		}
-		files = append(files, file)
-	}
-
-	pkgName := files[0].Name.Name
-
-	importMap := map[string]bool{}
-	var importDecls []ast.Decl
-	for _, f := range files {
-		for _, imp := range f.Imports {
-			if !importMap[imp.Path.Value] {
-				importMap[imp.Path.Value] = true
-				importDecls = append(importDecls, &ast.GenDecl{
-					Tok:   token.IMPORT,
-					Specs: []ast.Spec{imp},
-				})
-			}
-		}
-	}
-
-	var otherDecls []ast.Decl
-	for _, f := range files {
-		for _, decl := range f.Decls {
-			if gen, ok := decl.(*ast.GenDecl); ok && gen.Tok == token.IMPORT {
-				continue
-			}
-			otherDecls = append(otherDecls, decl)
-		}
-	}
-
-	var buf bytes.Buffer
-	// header (first line comment)
-	if len(files[0].Comments) > 0 {
-		fmt.Fprint(&buf, "// ")
-		fmt.Fprintln(&buf, files[0].Comments[0].Text())
-		fmt.Fprintln(&buf)
-	}
-	// package
-	fmt.Fprintf(&buf, "package %s\n\n", pkgName)
-	// imports
-	if len(importDecls) > 0 {
-		for _, decl := range importDecls {
-			printer.Fprint(&buf, fset, decl)
-			fmt.Fprintln(&buf)
-		}
-		fmt.Fprintln(&buf)
-	}
-	// decls
-	for _, decl := range otherDecls {
-		printer.Fprint(&buf, fset, decl)
-		fmt.Fprintln(&buf)
-	}
-
-	// return buf.Bytes(), nil
-
-	out, err := format.Source(buf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("format merged source: %w", err)
-	}
-	return out, nil
-}
-
-func formatSrc(src []byte) ([]byte, error) {
-	// format imports
-	src, err := imports.Process("_.go", src, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// format source code
-	src, err = format.Source(src)
-	if err != nil {
-		return nil, err
-	}
-	return src, nil
 }

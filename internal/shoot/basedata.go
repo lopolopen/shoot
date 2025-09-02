@@ -6,8 +6,6 @@ import (
 	"github.com/lopolopen/shoot/internal/transfer"
 )
 
-const Cmd = "shoot"
-
 type BaseData struct {
 	Cmd         string
 	PackageName string

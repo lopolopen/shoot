@@ -84,3 +84,6 @@ func (c *Color) UnmarshalJSON(data []byte) error {
 	*c = v_
 	return nil
 }
+
+// ShootEnum exists solely to fulfill the EnumShooter interface contract
+func (c Color) ShootEnum() { /*noop*/ }

@@ -6,10 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/format"
-	"go/parser"
-	"go/printer"
 	"go/token"
+	"go/types"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,7 +16,6 @@ import (
 
 	"github.com/lopolopen/shoot/internal/shoot"
 	"golang.org/x/tools/go/packages"
-	"golang.org/x/tools/imports"
 )
 
 const SubCmd = "enum"
@@ -49,6 +46,8 @@ func (g *Generator) ParseFlags() {
 	text := sub.Bool("text", false, "generate MarshaText/UnmarshalText method for the type")
 	verbose := sub.Bool("verbose", false, "verbose output")
 	v := sub.Bool("v", false, "verbose output (alias for verbose)")
+	raw := sub.Bool("raw", false, "raw source")
+	r := sub.Bool("r", false, "raw source (alias for raw)")
 
 	sub.Parse(flag.Args()[1:]) //e.g. enum -bit type=YourType ./testdata
 
@@ -84,6 +83,7 @@ func (g *Generator) ParseFlags() {
 			FileName:  *fileName,
 			Dir:       dir,
 			Verbose:   *v || *verbose,
+			Raw:       *r || *raw,
 		},
 		bitwise: *bitwise || *bit,
 		json:    *json,
@@ -121,19 +121,29 @@ func (g *Generator) Generate() map[string][]byte {
 	if true {
 		//each type has its own separate file
 		for _, typName := range g.flags.TypeNames {
-			srcMap[g.fileName(typName, false)] = g.generate(typName)
+			src := g.generate(typName)
+			if len(src) == 0 {
+				continue
+			}
+			srcMap[g.fileName(typName, false)] = src
 		}
 	} else {
 		//types in one file
 		var srcList [][]byte
 		for _, typName := range g.flags.TypeNames {
-			srcList = append(srcList, g.generate(typName))
+			src := g.generate(typName)
+			if len(src) == 0 {
+				continue
+			}
+			srcList = append(srcList, src)
 		}
-		src, err := mergeGoSources(srcList...)
+		src, err := shoot.MergeSources(srcList...)
 		if err != nil {
 			log.Fatalf("merge sources error: %s", err)
 		}
-		srcMap[g.fileName("", false)] = src
+		if len(src) > 0 {
+			srcMap[g.fileName("", false)] = src
+		}
 	}
 	return srcMap
 }
@@ -144,6 +154,10 @@ func (g *Generator) generate(typeName string) []byte {
 	g.makeBitwize()
 	g.makeJson()
 	g.makeText()
+
+	if len(g.data.NameList) == 0 {
+		return nil
+	}
 
 	var buff bytes.Buffer
 	tmpl, err := template.New(SubCmd).Funcs(g.data.Transfers()).Parse(tmplTxt)
@@ -162,7 +176,12 @@ func (g *Generator) generate(typeName string) []byte {
 	if g.flags.Verbose {
 		log.Printf("[debug]:\n%s", string(src))
 	}
-	src, err = formatSrc(src)
+
+	if g.flags.Raw {
+		return src //typically used for debugging
+	}
+
+	src, err = shoot.FormatSrc(src)
 	if err != nil {
 		log.Fatalf("format source: %s", err)
 	}
@@ -222,6 +241,26 @@ func (g *Generator) parseTypeNames() {
 					if !ok {
 						continue
 					}
+
+					obj := g.pkg.pkg.TypesInfo.Defs[ts.Name]
+					if obj == nil {
+						continue
+					}
+
+					typ := obj.Type()
+					under := typ.Underlying()
+
+					basic, ok := under.(*types.Basic)
+					if !ok {
+						continue
+					}
+
+					kind := basic.Kind()
+					if kind != types.Int && kind != types.Uint &&
+						kind != types.Int32 && kind != types.Uint32 {
+						continue
+					}
+
 					if ts.Assign.IsValid() {
 						log.Printf("[warn:] alias type %s will be ignored", ts.Name.Name)
 					} else {
@@ -258,93 +297,4 @@ func (g *Generator) fileName(name string, pkgScope bool) string {
 		name = name + "_"
 	}
 	return fmt.Sprintf("%s_%s.go", gofile, strings.ToLower(name))
-}
-
-func mergeGoSources(sources ...[]byte) ([]byte, error) {
-	if len(sources) == 0 {
-		return nil, nil
-	}
-
-	fset := token.NewFileSet()
-	var files []*ast.File
-
-	for i, src := range sources {
-		file, err := parser.ParseFile(fset, fmt.Sprintf("src%d.go", i), src, parser.ParseComments)
-		if err != nil {
-			return nil, fmt.Errorf("parse src%d.go: %w", i, err)
-		}
-		files = append(files, file)
-	}
-
-	pkgName := files[0].Name.Name
-
-	importMap := map[string]bool{}
-	var importDecls []ast.Decl
-	for _, f := range files {
-		for _, imp := range f.Imports {
-			if !importMap[imp.Path.Value] {
-				importMap[imp.Path.Value] = true
-				importDecls = append(importDecls, &ast.GenDecl{
-					Tok:   token.IMPORT,
-					Specs: []ast.Spec{imp},
-				})
-			}
-		}
-	}
-
-	var otherDecls []ast.Decl
-	for _, f := range files {
-		for _, decl := range f.Decls {
-			if gen, ok := decl.(*ast.GenDecl); ok && gen.Tok == token.IMPORT {
-				continue
-			}
-			otherDecls = append(otherDecls, decl)
-		}
-	}
-
-	var buf bytes.Buffer
-	// header (first line comment)
-	if len(files[0].Comments) > 0 {
-		fmt.Fprint(&buf, "// ")
-		fmt.Fprintln(&buf, files[0].Comments[0].Text())
-		fmt.Fprintln(&buf)
-	}
-	// package
-	fmt.Fprintf(&buf, "package %s\n\n", pkgName)
-	// imports
-	if len(importDecls) > 0 {
-		for _, decl := range importDecls {
-			printer.Fprint(&buf, fset, decl)
-			fmt.Fprintln(&buf)
-		}
-		fmt.Fprintln(&buf)
-	}
-	// decls
-	for _, decl := range otherDecls {
-		printer.Fprint(&buf, fset, decl)
-		fmt.Fprintln(&buf)
-	}
-
-	// return buf.Bytes(), nil
-
-	out, err := format.Source(buf.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("format merged source: %w", err)
-	}
-	return out, nil
-}
-
-func formatSrc(src []byte) ([]byte, error) {
-	// format imports
-	src, err := imports.Process("./_.go", src, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// format source code
-	src, err = format.Source(src)
-	if err != nil {
-		return nil, err
-	}
-	return src, nil
 }

@@ -101,3 +101,6 @@ func (f FormatStyle) Add(flag FormatStyle) FormatStyle {
 func (f FormatStyle) Remove(flag FormatStyle) FormatStyle {
 	return f &^ flag
 }
+
+// ShootEnum exists solely to fulfill the EnumShooter interface contract
+func (f FormatStyle) ShootEnum() { /*noop*/ }

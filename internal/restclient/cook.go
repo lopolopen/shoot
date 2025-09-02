@@ -4,13 +4,19 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/build"
+	"go/parser"
 	"go/printer"
 	"go/token"
+	"go/types"
 	"log"
+	"net/http"
+	"reflect"
 	"regexp"
 	"strings"
 
 	"github.com/lopolopen/shoot/internal/shoot"
+	"github.com/lopolopen/shoot/internal/transfer"
 )
 
 func (g *Generator) cookClient(typeName string) {
@@ -22,83 +28,142 @@ func (g *Generator) cookClient(typeName string) {
 	aliasMap := make(map[string]map[string]string)
 	pathParansMap := make(map[string][]string)
 	bodyParamMap := make(map[string]string)
+	queryDictMap := make(map[string]string)
 	queryParamsMap := make(map[string][]string)
 	resultTypeMap := make(map[string]string)
+	ctxParamMap := make(map[string]string)
+	defHeaders := map[string]map[string]string{
+		http.MethodGet: {
+			"Accept": "application/json",
+		},
+		http.MethodPost: {
+			"Accept":       "application/json",
+			"Content-Type": "application/json",
+		},
+		http.MethodPut: {
+			"Accept":       "application/json",
+			"Content-Type": "application/json",
+		},
+		http.MethodPatch: {
+			"Accept":       "application/json",
+			"Content-Type": "application/json",
+		},
+		http.MethodDelete: {},
+	}
 
 	for _, f := range g.pkg.files {
 		ast.Inspect(f.file, func(n ast.Node) bool {
-			ts, ok := n.(*ast.TypeSpec)
-			if !ok {
+			if !g.testNode(typeName, n) {
 				return true
 			}
 
-			if ts.Name.Name != typeName {
-				return true
-			}
-
-			iface, ok := ts.Type.(*ast.InterfaceType)
-			if !ok {
-				return true
-			}
-
-			var embedIfaces []string
+			ts, _ := n.(*ast.TypeSpec)
+			iface, _ := ts.Type.(*ast.InterfaceType)
 			for _, field := range iface.Methods.List {
 				if len(field.Names) == 0 {
-					embedIfaces = append(embedIfaces, exprToString(field.Type))
+					if field.Doc != nil {
+						headers := parseHeaders(field.Doc.Text())
+						for k, v := range headers {
+							for _, headers := range defHeaders {
+								headers[k] = v
+							}
+						}
+					}
 				} else {
 					ftype, ok := field.Type.(*ast.FuncType)
 					if !ok {
-						return true
+						continue
 					}
 
 					doc := field.Doc.Text()
 					methodName := field.Names[0].Name
 					sigMap[methodName] = methodSignature(field) //full signature
 
-					if field.Doc != nil {
-						httpMethod, path, pathParams, ok := parsePath(doc) //pathParams ~ [id]
-						if !ok {
-							log.Println("[warn:]") //todo:
-							continue
+					if field.Doc == nil {
+						log.Printf("[warn:] method %s without comments will be ignored", methodName)
+						continue
+					}
+
+					httpMethod, path, pathParams, ok := parsePath(doc) //pathParams ~ [id]
+					if !ok {
+						log.Printf("[warn:] method %s with bad comments will be ignored", methodName)
+						continue
+					}
+
+					// switch httpMethod {
+					// case http.MethodGet:
+					// 	getList = append(getList, methodName)
+					// case http.MethodPost:
+					// 	postList = append(postList, methodName)
+					// }
+
+					methodList = append(methodList, methodName)
+					httpMethodMap[methodName] = httpMethod //http mehod
+					pathMap[methodName] = path             //http path
+
+					asMap := parseAlias(doc)             //userID -> id
+					reversMap := make(map[string]string) //id -> userID
+					for k, v := range asMap {
+						reversMap[v] = k
+					}
+					aliasMap[methodName] = asMap
+
+					var realPathParams []string
+					for _, name := range pathParams {
+						if real, ok := reversMap[name]; ok {
+							realPathParams = append(realPathParams, real) //fix path param
+						} else {
+							realPathParams = append(realPathParams, name)
 						}
+					}
+					pathParansMap[methodName] = realPathParams
 
-						// switch httpMethod {
-						// case http.MethodGet:
-						// 	getList = append(getList, methodName)
-						// case http.MethodPost:
-						// 	postList = append(postList, methodName)
-						// }
-
-						methodList = append(methodList, methodName)
-						httpMethodMap[methodName] = httpMethod //http mehod
-						pathMap[methodName] = path             //http path
-
-						alsMap := parseAlias(doc)            //userID -> id
-						reversMap := make(map[string]string) //id -> userID
-						for k, v := range alsMap {
-							reversMap[v] = k
-						}
-						aliasMap[methodName] = alsMap
-
-						var realPathParams []string
-						for _, name := range pathParams {
-							if real, ok := reversMap[name]; ok {
-								realPathParams = append(realPathParams, real) //fix path param
-							} else {
-								realPathParams = append(realPathParams, name)
-							}
-						}
-						pathParansMap[methodName] = realPathParams
-
-						//------------Params---------------
-						var queryParams []string
+					//------------Params---------------
+					var queryParams []string
+					if ftype.Params != nil {
 						for _, param := range ftype.Params.List {
 							for _, name := range param.Names {
 								switch t := param.Type.(type) {
 								case *ast.SelectorExpr:
-									typeName := exprToString(param.Type)
-									if typeName == "context.Context" { //todo: ctx exists? import alias?
+									typ := g.pkg.pkg.TypesInfo.Types[param.Type].Type
+									named, ok := typ.(*types.Named)
+									if !ok {
 										continue
+									}
+									obj := named.Obj()
+									pkgPath := obj.Pkg().Path()
+									if pkgPath == "context" && obj.Name() == "Context" {
+										ctxParamMap[methodName] = name.Name
+									} else {
+										bodyParamMap[methodName] = name.Name
+										fullPath, err := getPkgDir(pkgPath)
+										if err != nil {
+											log.Fatalf("get pkg dir: %s", err)
+										}
+										fields, err := extractStructFields(fullPath, t.Sel.Name)
+										if err != nil {
+											log.Fatalf("extract struct fields: %s", err)
+										}
+										for _, f := range fields {
+											key := f.Name //name
+											value := f.Name
+											if f.IsExported {
+												key = transfer.ToCamelCase(f.Name)
+												value = fmt.Sprintf("%s.%s", name.Name, f.Name)
+											} else {
+												value = fmt.Sprintf("%s.%s()", name.Name, transfer.ToPascalCase(f.Name))
+											}
+											queryParams = append(queryParams, value)
+
+											if aliasMap[methodName] == nil {
+												aliasMap[methodName] = make(map[string]string)
+											}
+											if f.Alias != "" {
+												aliasMap[methodName][value] = f.Alias
+											} else {
+												aliasMap[methodName][value] = key
+											}
+										}
 									}
 								case *ast.StarExpr:
 									if _, ok := t.X.(*ast.Ident); ok {
@@ -113,21 +178,30 @@ func (g *Generator) cookClient(typeName string) {
 										}
 										queryParams = append(queryParams, name.Name) //basic type
 									}
+								case *ast.MapType:
+									if httpMethod == http.MethodGet {
+										queryDictMap[methodName] = name.Name
+									}
 								default:
 									log.Fatalf("bad")
 								}
 							}
 						}
-						queryParamsMap[methodName] = queryParams
+					}
+					queryParamsMap[methodName] = queryParams
 
+					hasErr := false
+					if ftype.Results != nil {
 						if len(ftype.Results.List) > 2 {
-							log.Fatalf("bad") //todo
+							log.Fatalf("method %s must not return more than two values", methodName)
 						}
+
 						//------------Results---------------
 						for _, result := range ftype.Results.List {
 							if len(result.Names) == 0 {
 								typeName := getUnderlyingTypeName(result.Type)
 								if typeName == "error" {
+									hasErr = true
 									continue
 								}
 								resultTypeMap[methodName] = typeName
@@ -135,15 +209,12 @@ func (g *Generator) cookClient(typeName string) {
 								//todo:
 							}
 						}
-
-						//todo: check alias={a:alias}, a exists?
 					}
+					if !hasErr {
+						log.Fatalf("method %s must return an error", methodName)
+					}
+					//todo: check alias={a:alias}, a exists?
 				}
-			}
-
-			if !shoot.Contains(embedIfaces, "shoot.RestClient") {
-				log.Printf("[warn:] interface without shoot.RestClient embed will be ignore")
-				return true
 			}
 
 			return false
@@ -160,6 +231,10 @@ func (g *Generator) cookClient(typeName string) {
 	g.data.QueryParamsMap = queryParamsMap
 	g.data.ResultTypeMap = resultTypeMap
 	g.data.BodyParamMap = bodyParamMap
+	g.data.QueryDictMap = queryDictMap
+	g.data.QueryParamsMap = queryParamsMap
+	g.data.DefaultHeaders = defHeaders
+	g.data.CtxParamMap = ctxParamMap
 }
 
 func exprToString(expr ast.Expr) string {
@@ -205,6 +280,32 @@ func formatFieldList(fl *ast.FieldList) string {
 	return strings.Join(parts, ", ")
 }
 
+func parseHeaders(doc string) map[string]string {
+	headers := make(map[string]string)
+	regHeaders := regexp.MustCompile(`shoot:.*?\Wheaders=((?:\s*{[^\n]+},?)+)`)
+	ms := regHeaders.FindStringSubmatch(doc)
+	if len(ms) > 0 {
+		kvMap := parseKV(ms[1])
+		for k, v := range kvMap {
+			headers[k] = v
+		}
+	}
+	return headers
+}
+
+func parseKV(str string) map[string]string {
+	regKV := regexp.MustCompile(`{([\w|-]+)\W*:\W*([^}]+)}`)
+	kvLst := regKV.FindAllStringSubmatch(str, -1)
+	if len(kvLst) == 0 {
+		return nil
+	}
+	kvMap := make(map[string]string)
+	for _, kv := range kvLst {
+		kvMap[kv[1]] = kv[2]
+	}
+	return kvMap
+}
+
 func parsePath(doc string) (string, string, []string, bool) {
 	regReq := regexp.MustCompile(`(?im)^shoot:\W+(get|post|put|patch|delete)\((.*)\)\W*;?\W*$`)
 	ms := regReq.FindStringSubmatch(doc)
@@ -213,6 +314,13 @@ func parsePath(doc string) (string, string, []string, bool) {
 	}
 	method := strings.ToUpper(ms[1])
 	path := strings.TrimSpace(ms[2])
+
+	regPath := regexp.MustCompile(`^("[^"]+"|[^"]+)$`)
+	if !regPath.MatchString(path) {
+		log.Fatalf("bad path format: %s", path)
+	}
+
+	path = strings.Trim(path, `"`)
 
 	regPathParam := regexp.MustCompile(`{(\w+)}`)
 	psLst := regPathParam.FindAllStringSubmatch(path, -1)
@@ -230,16 +338,8 @@ func parseAlias(doc string) map[string]string {
 		return nil
 	}
 	aliasLst := ms[1] //{userID:id},...
-	regKV := regexp.MustCompile(`{(\w+)\W*:\W*(\w+)}`)
-	asLst := regKV.FindAllStringSubmatch(aliasLst, -1)
-	if len(asLst) == 0 {
-		return nil
-	}
-	aliasMap := make(map[string]string)
-	for _, as := range asLst {
-		aliasMap[as[1]] = as[2]
-	}
-	return aliasMap //useID -> id
+	kvMap := parseKV(aliasLst)
+	return kvMap
 }
 
 func getUnderlyingTypeName(expr ast.Expr) string {
@@ -273,4 +373,98 @@ func isStructType(name string, file *ast.File) bool {
 		}
 	}
 	return false
+}
+
+func parsePreq() {
+
+}
+
+type fieldInfo struct {
+	Name       string
+	Type       string
+	Tag        string
+	Alias      string
+	IsExported bool
+}
+
+func extractStructFields(pkgPath, typeName string) ([]fieldInfo, error) {
+	fset := token.NewFileSet()
+	pkgs, err := parser.ParseDir(fset, pkgPath, nil, parser.ParseComments)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse package: %w", err)
+	}
+
+	var fields []fieldInfo
+	for _, pkg := range pkgs {
+		for _, file := range pkg.Files {
+			for _, decl := range file.Decls {
+				genDecl, ok := decl.(*ast.GenDecl)
+				if !ok {
+					continue
+				}
+				if genDecl.Tok != token.TYPE {
+					continue
+				}
+				for _, spec := range genDecl.Specs {
+					typeSpec, ok := spec.(*ast.TypeSpec)
+					if !ok {
+						continue
+					}
+					if typeSpec.Name.Name != typeName {
+						continue
+					}
+					structType, ok := typeSpec.Type.(*ast.StructType)
+					if !ok {
+						continue
+					}
+					for _, field := range structType.Fields.List {
+						var alias string
+						var rawTag string
+						if field.Tag != nil {
+							rawTag = field.Tag.Value
+							alias = parseFieldAlias(rawTag)
+						}
+						for _, name := range field.Names {
+							fields = append(fields, fieldInfo{
+								Name:       name.Name,
+								Type:       exprToString(field.Type),
+								Tag:        rawTag,
+								Alias:      alias,
+								IsExported: name.IsExported(),
+							})
+						}
+						// Handle anonymous fields (embedded structs)
+						if len(field.Names) == 0 {
+							fields = append(fields, fieldInfo{
+								Name:       exprToString(field.Type),
+								Type:       exprToString(field.Type),
+								Tag:        rawTag,
+								Alias:      alias,
+								IsExported: true,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
+	return fields, nil
+}
+
+func getPkgDir(importPath string) (string, error) {
+	pkg, err := build.Import(importPath, "", build.FindOnly)
+	if err != nil {
+		return "", err
+	}
+	return pkg.Dir, nil
+}
+
+func parseFieldAlias(tag string) string {
+	t := reflect.StructTag(strings.Trim(tag, "`"))
+	aliasReg := regexp.MustCompile(`alias=(\w+)`)
+	ms := aliasReg.FindStringSubmatch(t.Get("shoot"))
+	if len(ms) == 0 {
+		return ""
+	}
+	return ms[1]
 }
