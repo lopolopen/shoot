@@ -1,4 +1,4 @@
-package enum
+package enums
 
 //go:generate go tool shoot enum -json -text -file=$GOFILE
 

@@ -2,17 +2,24 @@
 
 package shoot
 
+import (
+	"time"
+
+	"github.com/lopolopen/shoot/middleware"
+)
+
 // NewRestConf constructs a new instance of type RestConf
-func NewRestConf(baseURL string, timeout int) *RestConf {
+func NewRestConf(baseURL string, timeout time.Duration, enableLogging bool, defaultHeaders map[string]string) *RestConf {
 	return &RestConf{
-		baseURL: baseURL,
-		timeout: timeout,
+		baseURL:        baseURL,
+		timeout:        timeout,
+		enableLogging:  enableLogging,
+		defaultHeaders: defaultHeaders,
 	}
 }
 
 // With initializes this instance using the functional options pattern
 func (r *RestConf) With(opts ...Option[RestConf, *RestConf]) *RestConf {
-	r.SetDefault()
 	for _, opt := range opts {
 		opt(r)
 	}
@@ -20,21 +27,39 @@ func (r *RestConf) With(opts ...Option[RestConf, *RestConf]) *RestConf {
 }
 
 // BaseURLOfRestConf is a configuration for the filed baseURL
-func BaseURLOfRestConf(baseurl_ string) Option[RestConf, *RestConf] {
+func BaseURLOfRestConf(baseURL_ string) Option[RestConf, *RestConf] {
 	return func(r *RestConf) {
-		r.baseURL = baseurl_
+		r.baseURL = baseURL_
 	}
 }
 
 // TimeoutOfRestConf is a configuration for the filed timeout
-func TimeoutOfRestConf(timeout_ int) Option[RestConf, *RestConf] {
+func TimeoutOfRestConf(timeout_ time.Duration) Option[RestConf, *RestConf] {
 	return func(r *RestConf) {
 		r.timeout = timeout_
 	}
 }
 
-// SetDefault sets the default values
-func (r *RestConf) SetDefault() {}
+// EnableLoggingOfRestConf is a configuration for the filed enableLogging
+func EnableLoggingOfRestConf(enableLogging_ bool) Option[RestConf, *RestConf] {
+	return func(r *RestConf) {
+		r.enableLogging = enableLogging_
+	}
+}
+
+// DefaultHeadersOfRestConf is a configuration for the filed defaultHeaders
+func DefaultHeadersOfRestConf(defaultHeaders_ map[string]string) Option[RestConf, *RestConf] {
+	return func(r *RestConf) {
+		r.defaultHeaders = defaultHeaders_
+	}
+}
+
+// MiddlewaresOfRestConf is a configuration for the filed Middlewares
+func MiddlewaresOfRestConf(middlewares_ []middleware.Middleware) Option[RestConf, *RestConf] {
+	return func(r *RestConf) {
+		r.Middlewares = middlewares_
+	}
+}
 
 // BaseURL gets the value of field baseURL
 func (r *RestConf) BaseURL() string {
@@ -42,8 +67,18 @@ func (r *RestConf) BaseURL() string {
 }
 
 // Timeout gets the value of field timeout
-func (r *RestConf) Timeout() int {
+func (r *RestConf) Timeout() time.Duration {
 	return r.timeout
+}
+
+// EnableLogging gets the value of field enableLogging
+func (r *RestConf) EnableLogging() bool {
+	return r.enableLogging
+}
+
+// DefaultHeaders gets the value of field defaultHeaders
+func (r *RestConf) DefaultHeaders() map[string]string {
+	return r.defaultHeaders
 }
 
 // SetBaseURL sets the value of field baseURL
@@ -52,6 +87,19 @@ func (r *RestConf) SetBaseURL(baseURL_ string) {
 }
 
 // SetTimeout sets the value of field timeout
-func (r *RestConf) SetTimeout(timeout_ int) {
+func (r *RestConf) SetTimeout(timeout_ time.Duration) {
 	r.timeout = timeout_
 }
+
+// SetEnableLogging sets the value of field enableLogging
+func (r *RestConf) SetEnableLogging(enableLogging_ bool) {
+	r.enableLogging = enableLogging_
+}
+
+// SetDefaultHeaders sets the value of field defaultHeaders
+func (r *RestConf) SetDefaultHeaders(defaultHeaders_ map[string]string) {
+	r.defaultHeaders = defaultHeaders_
+}
+
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (r RestConf) ShootNew() { /*noop*/ }

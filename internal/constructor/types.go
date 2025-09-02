@@ -25,6 +25,7 @@ type Data struct {
 	//Unmarshal: Setter + Exported
 	ExportedList []string
 	EmbedList    []string
+	Self         bool
 }
 
 type Flags struct {

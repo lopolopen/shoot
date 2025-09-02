@@ -14,21 +14,13 @@ type KV struct {
 	value string
 }
 
-type Book struct {
-	name  string
-	price int
-}
-
 type Client interface {
-	shoot.RestClient
+	//shoot: headers={Authorization:Basic dXNlcm5hbWU6cGFzc3dvcmQ=}
+	shoot.RestClient[Client]
 
-	//shoot: Get(/get)
+	//shoot: Get("/get")
 	Get(ctx context.Context, key string) (*KV, error)
 
-	//shoot: Post(/set)
+	//shoot: Post("/set")
 	Set(ctx context.Context, kv *KV) error
-
-	//shoot: Get(/users/{id})
-	//shoot: alias={userID:id},{q1:a1}
-	GetUser(ctx context.Context, userID string, q1 int, q2 string) (*Book, error)
 }

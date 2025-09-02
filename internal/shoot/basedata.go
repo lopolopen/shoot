@@ -6,8 +6,6 @@ import (
 	"github.com/lopolopen/shoot/internal/transfer"
 )
 
-const Cmd = "shoot"
-
 type BaseData struct {
 	Cmd         string
 	PackageName string
@@ -19,6 +17,14 @@ func (d *BaseData) PreRegister() {
 	d.Register("firstLower", transfer.FirstLower)
 	d.Register("camelCase", transfer.ToCamelCase)
 	d.Register("pascalCase", transfer.ToPascalCase)
+	d.Register("in", func(s string, list []string) bool {
+		for _, x := range list {
+			if s == x {
+				return true
+			}
+		}
+		return false
+	})
 }
 
 func (d *BaseData) Register(key string, transfer any) {

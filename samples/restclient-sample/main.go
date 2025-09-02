@@ -3,15 +3,27 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"restclientsample/myclient"
+	"time"
 
 	"github.com/lopolopen/shoot"
+	"github.com/lopolopen/shoot/middleware"
 )
+
+func WaitMiddeleware(next http.RoundTripper) http.RoundTripper {
+	return middleware.RoundTripper(func(req *http.Request) (*http.Response, error) {
+		time.Sleep(time.Second)
+		return next.RoundTrip(req)
+	})
+}
 
 func main() {
 	myC := shoot.NewRest[myclient.Client](
 		shoot.BaseURLOfRestConf("http://localhost:8080"),
-		shoot.TimeoutOfRestConf(1000),
+		shoot.TimeoutOfRestConf(3000*time.Millisecond),
+		shoot.EnableLoggingOfRestConf(true),
+		shoot.Use(WaitMiddeleware),
 	)
 
 	ctx := context.Background()
