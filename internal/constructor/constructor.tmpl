@@ -23,29 +23,31 @@ func New{{.TypeName}}({{range .NewList}}{{.}} {{typeof .}},{{end}}) *{{.TypeName
 	}
 }
 
+{{- $r := firstLower .TypeName -}}
+
 {{if .Option}}
 // With initializes this instance using the functional options pattern
-func ({{firstLower .TypeName}} *{{.TypeName}})With(opts ...shoot.Option[{{.TypeName}}, *{{.TypeName}}]) *{{.TypeName}} { 
-	{{firstLower .TypeName}}.SetDefault()
+func ({{$r}} *{{.TypeName}})With(opts ...shoot.Option[{{.TypeName}}, *{{.TypeName}}]) *{{.TypeName}} { 
+	{{$r}}.SetDefault()
 	for _, opt := range opts {
-        opt({{firstLower .TypeName}})
+        opt({{$r}})
     }
-    return {{firstLower .TypeName}}
+    return {{$r}}
 }
 
 {{range .AllList -}}
 // {{pascalCase .}}Of{{$.TypeName}} is a configuration for the filed {{.}}
 func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}}_ {{typeof .}})shoot.Option[{{$.TypeName}}, *{{$.TypeName}}] {
-	 return func({{firstLower $.TypeName}} *{{$.TypeName}}) {
-        {{firstLower $.TypeName}}.{{.}} = {{camelCase .}}_ 
+	 return func({{$r}} *{{$.TypeName}}) {
+        {{$r}}.{{.}} = {{camelCase .}}_ 
     }
 }
 {{end}}
 
 // SetDefault sets the default values
-func ({{firstLower .TypeName}} *{{.TypeName}})SetDefault(){
+func ({{$r}} *{{.TypeName}})SetDefault(){
 	{{- range .DefaultList -}}
-	{{firstLower $.TypeName}}.{{.}} = {{defaultof .}}{{"\n"}}
+	{{$r}}.{{.}} = {{defaultof .}}{{"\n"}}
 	{{- end -}}
 }
 {{- end}}
@@ -54,15 +56,15 @@ func ({{firstLower .TypeName}} *{{.TypeName}})SetDefault(){
 {{if .GetSet}}
 {{range .GetterList -}}
 // {{pascalCase .}} gets the value of field {{.}}
-func ({{firstLower $.TypeName}} *{{$.TypeName}}){{pascalCase .}}() {{typeof .}} {
-	return {{firstLower $.TypeName}}.{{.}}
+func ({{$r}} *{{$.TypeName}}){{pascalCase .}}() {{typeof .}} {
+	return {{$r}}.{{.}}
 }
 {{end}}
 
 {{range .SetterList}}
 // Set{{pascalCase .}} sets the value of field {{.}}
-func ({{firstLower $.TypeName}} *{{$.TypeName}})Set{{pascalCase .}}({{.}}_ {{typeof .}}) {
-	{{firstLower $.TypeName}}.{{.}} = {{.}}_
+func ({{$r}} *{{$.TypeName}})Set{{pascalCase .}}({{.}}_ {{typeof .}}) {
+	{{$r}}.{{.}} = {{.}}_
 }
 {{end}}
 {{end}}
@@ -87,13 +89,13 @@ type _{{.TypeName}}_unmarshal struct {
 }
 
 // MarshalJSON serializes type {{.TypeName}} to json bytes
-func ({{firstLower .TypeName}} {{.TypeName}})MarshalJSON()([]byte, error) {
+func ({{$r}} {{.TypeName}})MarshalJSON()([]byte, error) {
 	data := _{{.TypeName}}_marshal{ 
 		{{range .GetterList -}}
-		{{pascalCase .}}: {{firstLower $.TypeName}}.{{pascalCase .}}(),{{"\n"}}
+		{{pascalCase .}}: {{$r}}.{{pascalCase .}}(),{{"\n"}}
 		{{- end}}
 		{{range .ExportedList -}}
-		{{.}}: {{firstLower $.TypeName}}.{{.}},{{"\n"}}
+		{{.}}: {{$r}}.{{.}},{{"\n"}}
 		{{- end}}
 	}
 	{{if not .EmbedList -}}
@@ -101,7 +103,7 @@ func ({{firstLower .TypeName}} {{.TypeName}})MarshalJSON()([]byte, error) {
 	{{- else}}
 	values := make(map[string]interface{})
 	{{range $i, $v := .EmbedList -}}
-	j{{$i}}, err := json.Marshal({{firstLower $.TypeName}}.{{$v}})
+	j{{$i}}, err := json.Marshal({{$r}}.{{$v}})
 	if err != nil {
 		return nil, err
 	}
@@ -123,16 +125,16 @@ func ({{firstLower .TypeName}} {{.TypeName}})MarshalJSON()([]byte, error) {
 }
 
 // UnmarshalJSON deserializes json bytes to type {{.TypeName}}
-func ({{firstLower .TypeName}} *{{.TypeName}})UnmarshalJSON(data []byte) error {
+func ({{$r}} *{{.TypeName}})UnmarshalJSON(data []byte) error {
 	var {{camelCase .TypeName}}_ _{{.TypeName}}_unmarshal
 	if err := json.Unmarshal(data, &{{camelCase .TypeName}}_); err != nil {
 		return err
 	}
 	{{range .SetterList -}}
-	{{firstLower $.TypeName}}.Set{{pascalCase .}}({{camelCase $.TypeName}}_.{{pascalCase .}}){{"\n"}}
+	{{$r}}.Set{{pascalCase .}}({{camelCase $.TypeName}}_.{{pascalCase .}}){{"\n"}}
 	{{- end}}
 	{{range .ExportedList -}}
-	{{firstLower $.TypeName}}.{{.}} = {{camelCase $.TypeName}}_.{{.}}{{"\n"}}
+	{{$r}}.{{.}} = {{camelCase $.TypeName}}_.{{.}}{{"\n"}}
 	{{- end}} 
 	{{if .EmbedList -}}
 	all := make(map[string]interface{})
@@ -157,7 +159,7 @@ func ({{firstLower .TypeName}} *{{.TypeName}})UnmarshalJSON(data []byte) error {
 		return err
 	}
 	{{range .EmbedList -}}
-		err = json.Unmarshal(jrest, &{{firstLower $.TypeName}}.{{.}})
+		err = json.Unmarshal(jrest, &{{$r}}.{{.}})
 		if err != nil {
 			return err
 		}

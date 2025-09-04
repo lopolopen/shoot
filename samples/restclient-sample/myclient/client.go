@@ -2,8 +2,6 @@ package myclient
 
 import (
 	"context"
-
-	"github.com/lopolopen/shoot"
 )
 
 //xgo:generate go tool shoot new -getset -json -file=$GOFILE
@@ -23,10 +21,6 @@ const (
 	Femal
 )
 
-type G2 Gender
-
-type G3 = Gender
-
 type User struct {
 	id     string
 	name   string
@@ -35,8 +29,6 @@ type User struct {
 }
 
 type Client interface {
-	shoot.RestClient
-
 	//shoot: Get("/get")
 	Get(ctx context.Context, key string) (*KV, error)
 

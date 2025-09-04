@@ -1,23 +1,12 @@
 package shoot
 
-var restFactories = map[any]func(RestConf) RestClient{}
+import "github.com/lopolopen/shoot/constraints"
 
-type restClient interface {
-	RestClient
-}
+var restFactories = map[any]func(RestConf) any{}
 
-func Register[T restClient](ctor func(RestConf) RestClient) {
+func Register[T constraints.ShootRest[T]](ctor func(RestConf) any) {
 	var t T
 	restFactories[t] = ctor
-}
-
-type RestClient interface {
-	// SetCont(conf *RestConf)
-}
-
-type ClientPtr[T any] interface {
-	~*T
-	RestClient
 }
 
 //go:generate go run github.com/lopolopen/shoot/cmd/shoot new -getset -opt -type=RestConf
@@ -27,12 +16,12 @@ type RestConf struct {
 	timeout int
 }
 
-func NewRest[T RestClient](opts ...Option[RestConf, *RestConf]) T {
+func NewRest[T constraints.ShootRest[T]](opts ...Option[RestConf, *RestConf]) T {
 	var t T
 	conf := NewWith(opts...)
 	ctor, ok := restFactories[t]
 	if !ok {
-		panic("!!!")
+		panic("non rest constructor registered")
 	}
 	t = ctor(*conf).(T)
 	return t

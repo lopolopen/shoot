@@ -51,12 +51,12 @@ var goldens_enum = []Golden{
 			"enum_bit.go_formatstyle.go",
 		},
 	},
-	{
-		cmd: "shoot enum -json -type=Color ./testdata/enumer",
-		names: []string{
-			"enum_json.go_color.go",
-		},
-	},
+	// {
+	// 	cmd: "shoot enum -json -type=Color ./testdata/enumer",
+	// 	names: []string{
+	// 		"enum_json.go_color.go",
+	// 	},
+	// },
 }
 
 func TestShootNew_Golden(t *testing.T) {

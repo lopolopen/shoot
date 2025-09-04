@@ -55,3 +55,5 @@ func (r *RestConf) SetBaseURL(baseURL_ string) {
 func (r *RestConf) SetTimeout(timeout_ int) {
 	r.timeout = timeout_
 }
+
+func (r *RestConf) ShootNew() {}
