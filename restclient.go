@@ -1,3 +1,4 @@
+//go:generate go run github.com/lopolopen/shoot/cmd/shoot new -getset -opt -type=RestConf
 package shoot
 
 import (
@@ -5,43 +6,37 @@ import (
 	"net/http"
 	"reflect"
 	"time"
+
+	"github.com/lopolopen/shoot/middleware"
 )
-
-//go:generate go run github.com/lopolopen/shoot/cmd/shoot new -getset -opt -type=RestConf
-
-type Middleware func(next http.RoundTripper) http.RoundTripper
 
 // RestConf holds configuration parameters for initializing a RestClient.
 type RestConf struct {
-	baseURL        string
-	timeout        time.Duration
+	baseURL       string
+	timeout       time.Duration
+	enableLogging bool
+	//todo: enableTrace    bool
 	defaultHeaders map[string]string
-	Middlewares    []Middleware
+	Middlewares    []middleware.Middleware
 }
 
-func (r *RestConf) use(m Middleware) *RestConf {
-	r.Middlewares = append(r.Middlewares, m)
-	return r
-}
-
-func Use(middleware Middleware) Option[RestConf, *RestConf] {
-	return func(r *RestConf) {
-		r.use(middleware)
-	}
-}
-
+// BuildMiddleware constructs the middleware chain by wrapping the default HTTP transport.
 func (r *RestConf) BuildMiddleware() http.RoundTripper {
 	t := http.DefaultTransport
 	for i := len(r.Middlewares) - 1; i >= 0; i-- {
 		t = r.Middlewares[i](t)
 	}
+	if r.enableLogging {
+		t = middleware.LoggingMiddleware(t)
+	}
 	return t
 }
 
-type RoundTripper func(*http.Request) (*http.Response, error)
-
-func (f RoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
+// Use returns an Option function that applies the given middleware to a RestConf instance.
+func Use(middleware middleware.Middleware) Option[RestConf, *RestConf] {
+	return func(r *RestConf) {
+		r.Middlewares = append(r.Middlewares, middleware)
+	}
 }
 
 // RestClient defines the interface for REST-capable clients.

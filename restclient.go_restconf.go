@@ -4,13 +4,16 @@ package shoot
 
 import (
 	"time"
+
+	"github.com/lopolopen/shoot/middleware"
 )
 
 // NewRestConf constructs a new instance of type RestConf
-func NewRestConf(baseURL string, timeout time.Duration, defaultHeaders map[string]string) *RestConf {
+func NewRestConf(baseURL string, timeout time.Duration, enableLogging bool, defaultHeaders map[string]string) *RestConf {
 	return &RestConf{
 		baseURL:        baseURL,
 		timeout:        timeout,
+		enableLogging:  enableLogging,
 		defaultHeaders: defaultHeaders,
 	}
 }
@@ -37,6 +40,13 @@ func TimeoutOfRestConf(timeout_ time.Duration) Option[RestConf, *RestConf] {
 	}
 }
 
+// EnableLoggingOfRestConf is a configuration for the filed enableLogging
+func EnableLoggingOfRestConf(enableLogging_ bool) Option[RestConf, *RestConf] {
+	return func(r *RestConf) {
+		r.enableLogging = enableLogging_
+	}
+}
+
 // DefaultHeadersOfRestConf is a configuration for the filed defaultHeaders
 func DefaultHeadersOfRestConf(defaultHeaders_ map[string]string) Option[RestConf, *RestConf] {
 	return func(r *RestConf) {
@@ -45,7 +55,7 @@ func DefaultHeadersOfRestConf(defaultHeaders_ map[string]string) Option[RestConf
 }
 
 // MiddlewaresOfRestConf is a configuration for the filed Middlewares
-func MiddlewaresOfRestConf(middlewares_ []Middleware) Option[RestConf, *RestConf] {
+func MiddlewaresOfRestConf(middlewares_ []middleware.Middleware) Option[RestConf, *RestConf] {
 	return func(r *RestConf) {
 		r.Middlewares = middlewares_
 	}
@@ -61,6 +71,11 @@ func (r *RestConf) Timeout() time.Duration {
 	return r.timeout
 }
 
+// EnableLogging gets the value of field enableLogging
+func (r *RestConf) EnableLogging() bool {
+	return r.enableLogging
+}
+
 // DefaultHeaders gets the value of field defaultHeaders
 func (r *RestConf) DefaultHeaders() map[string]string {
 	return r.defaultHeaders
@@ -74,6 +89,11 @@ func (r *RestConf) SetBaseURL(baseURL_ string) {
 // SetTimeout sets the value of field timeout
 func (r *RestConf) SetTimeout(timeout_ time.Duration) {
 	r.timeout = timeout_
+}
+
+// SetEnableLogging sets the value of field enableLogging
+func (r *RestConf) SetEnableLogging(enableLogging_ bool) {
+	r.enableLogging = enableLogging_
 }
 
 // SetDefaultHeaders sets the value of field defaultHeaders
