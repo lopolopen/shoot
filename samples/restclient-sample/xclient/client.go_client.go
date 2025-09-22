@@ -36,11 +36,6 @@ func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageI
 		return nil, err
 	}
 
-	query_ := req_.URL.Query()
-	query_.Set("size", fmt.Sprintf("%v", pageSize))
-	query_.Set("page_idx", fmt.Sprintf("%v", pageIdx))
-	req_.URL.RawQuery = query_.Encode()
-
 	req_.Header.Add("Accept", "application/json")
 	req_.Header.Add("Tenant-Id", "123")
 
@@ -115,13 +110,6 @@ func (c *client) QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.Qu
 		return nil, err
 	}
 
-	query_ := req_.URL.Query()
-	query_.Set("name", fmt.Sprintf("%v", req.Name()))
-	query_.Set("lang", fmt.Sprintf("%v", req.Language()))
-	query_.Set("page_size", fmt.Sprintf("%v", req.PageSize))
-	query_.Set("pageIndex", fmt.Sprintf("%v", req.PageIndex))
-	req_.URL.RawQuery = query_.Encode()
-
 	req_.Header.Add("Accept", "application/json")
 	req_.Header.Add("Tenant-Id", "123")
 
@@ -182,6 +170,38 @@ func (c *client) QueryBooks2(ctx context.Context, groupID int, params map[string
 		return nil, err
 	}
 	return &result_, nil
+}
+
+func (c *client) UpdateUser(ctx context.Context, id int, user User) error {
+	path_ := "/users/{id}"
+	path_ = strings.Replace(path_, "{id}", fmt.Sprintf("%v", id), 1)
+
+	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
+	if err != nil {
+		return err
+	}
+
+	bodyJson_, err := json.Marshal(user)
+	if err != nil {
+		return err
+	}
+
+	req_, err := http.NewRequestWithContext(ctx, "PUT", url_, bytes.NewReader(bodyJson_))
+	if err != nil {
+		return err
+	}
+
+	req_.Header.Add("Accept", "application/json")
+	req_.Header.Add("Content-Type", "application/json")
+	req_.Header.Add("Tenant-Id", "123")
+
+	resp_, err := c.client.Do(req_)
+	if err != nil {
+		return err
+	}
+	defer resp_.Body.Close()
+
+	return nil
 }
 
 // ConfigHTTPClient allows customization of the underlying http.Client.

@@ -49,6 +49,9 @@ type Client interface {
 	//shoot: alias={groupID:id}
 	QueryBooks2(ctx context.Context, groupID int, params map[string]interface{}) (*dto.Book, error) //todo: return array?
 
+	//shoot: Put("/users/{id}")
+	UpdateUser(ctx context.Context, id int, user User) error
+
 	NoComment(ctx context.Context)
 }
 

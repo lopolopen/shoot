@@ -8,31 +8,25 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"go/types"
 	"log"
 	"net/http"
 	"reflect"
 	"regexp"
 	"strings"
-
-	"github.com/lopolopen/shoot/internal/shoot"
-	"github.com/lopolopen/shoot/internal/transfer"
 )
 
 func (g *Generator) cookClient(typeName string) {
-	var methodList []string
-	var postList []string
-	sigMap := make(map[string]string)
-	httpMethodMap := make(map[string]string)
-	pathMap := make(map[string]string)
-	aliasMap := make(map[string]map[string]string)
-	pathParansMap := make(map[string][]string)
-	bodyParamMap := make(map[string]string)
-	queryDictMap := make(map[string]string)
-	queryParamsMap := make(map[string][]string)
-	resultTypeMap := make(map[string]string)
-	ctxParamMap := make(map[string]string)
-	defHeaders := map[string]map[string]string{
+	g.data.SigMap = make(map[string]string)
+	g.data.HTTPMethodMap = make(map[string]string)
+	g.data.PathMap = make(map[string]string)
+	g.data.AliasMap = make(map[string]map[string]string)
+	g.data.PathParamsMap = make(map[string][]string)
+	g.data.QueryParamsMap = make(map[string][]string)
+	g.data.BodyParamMap = make(map[string]string)
+	g.data.QueryDictMap = make(map[string]string)
+	g.data.ResultTypeMap = make(map[string]string)
+	g.data.CtxParamMap = make(map[string]string)
+	g.data.DefaultHeaders = map[string]map[string]string{
 		http.MethodGet: {
 			"Accept": "application/json",
 		},
@@ -50,6 +44,7 @@ func (g *Generator) cookClient(typeName string) {
 		},
 		http.MethodDelete: {},
 	}
+	g.data.BodyHTTPMethods = []string{http.MethodPost, http.MethodPut, http.MethodPatch}
 
 	for _, f := range g.pkg.files {
 		ast.Inspect(f.file, func(n ast.Node) bool {
@@ -64,7 +59,7 @@ func (g *Generator) cookClient(typeName string) {
 					if field.Doc != nil {
 						headers := parseHeaders(field.Doc.Text())
 						for k, v := range headers {
-							for _, headers := range defHeaders {
+							for _, headers := range g.data.DefaultHeaders {
 								headers[k] = v
 							}
 						}
@@ -77,7 +72,7 @@ func (g *Generator) cookClient(typeName string) {
 
 					doc := field.Doc.Text()
 					methodName := field.Names[0].Name
-					sigMap[methodName] = methodSignature(field) //full signature
+					g.data.SigMap[methodName] = methodSignature(field) //full signature
 
 					if field.Doc == nil {
 						log.Printf("[warn:] method %s without comments will be ignored", methodName)
@@ -90,23 +85,17 @@ func (g *Generator) cookClient(typeName string) {
 						continue
 					}
 
-					// switch httpMethod {
-					// case http.MethodGet:
-					// 	getList = append(getList, methodName)
-					// case http.MethodPost:
-					// 	postList = append(postList, methodName)
-					// }
+					g.data.MethodList = append(g.data.MethodList, methodName)
 
-					methodList = append(methodList, methodName)
-					httpMethodMap[methodName] = httpMethod //http mehod
-					pathMap[methodName] = path             //http path
+					g.data.HTTPMethodMap[methodName] = httpMethod //http mehod
+					g.data.PathMap[methodName] = path             //http path
 
 					asMap := parseAlias(doc)             //userID -> id
 					reversMap := make(map[string]string) //id -> userID
 					for k, v := range asMap {
 						reversMap[v] = k
 					}
-					aliasMap[methodName] = asMap
+					g.data.AliasMap[methodName] = asMap
 
 					var realPathParams []string
 					for _, name := range pathParams {
@@ -116,79 +105,18 @@ func (g *Generator) cookClient(typeName string) {
 							realPathParams = append(realPathParams, name)
 						}
 					}
-					pathParansMap[methodName] = realPathParams
+					g.data.PathParamsMap[methodName] = realPathParams
 
 					//------------Params---------------
 					var queryParams []string
 					if ftype.Params != nil {
 						for _, param := range ftype.Params.List {
 							for _, name := range param.Names {
-								switch t := param.Type.(type) {
-								case *ast.SelectorExpr:
-									typ := g.pkg.pkg.TypesInfo.Types[param.Type].Type
-									named, ok := typ.(*types.Named)
-									if !ok {
-										continue
-									}
-									obj := named.Obj()
-									pkgPath := obj.Pkg().Path()
-									if pkgPath == "context" && obj.Name() == "Context" {
-										ctxParamMap[methodName] = name.Name
-									} else {
-										bodyParamMap[methodName] = name.Name
-										fullPath, err := getPkgDir(pkgPath)
-										if err != nil {
-											log.Fatalf("get pkg dir: %s", err)
-										}
-										fields, err := extractStructFields(fullPath, t.Sel.Name)
-										if err != nil {
-											log.Fatalf("extract struct fields: %s", err)
-										}
-										for _, f := range fields {
-											key := f.Name //name
-											value := f.Name
-											if f.IsExported {
-												key = transfer.ToCamelCase(f.Name)
-												value = fmt.Sprintf("%s.%s", name.Name, f.Name)
-											} else {
-												value = fmt.Sprintf("%s.%s()", name.Name, transfer.ToPascalCase(f.Name))
-											}
-											queryParams = append(queryParams, value)
-
-											if aliasMap[methodName] == nil {
-												aliasMap[methodName] = make(map[string]string)
-											}
-											if f.Alias != "" {
-												aliasMap[methodName][value] = f.Alias
-											} else {
-												aliasMap[methodName][value] = key
-											}
-										}
-									}
-								case *ast.StarExpr:
-									if _, ok := t.X.(*ast.Ident); ok {
-										bodyParamMap[methodName] = name.Name
-									}
-								case *ast.Ident:
-									if isStructType(name.Name, f.file) { //todo:
-										bodyParamMap[methodName] = name.Name
-									} else {
-										if shoot.Contains(realPathParams, name.Name) {
-											continue
-										}
-										queryParams = append(queryParams, name.Name) //basic type
-									}
-								case *ast.MapType:
-									if httpMethod == http.MethodGet {
-										queryDictMap[methodName] = name.Name
-									}
-								default:
-									log.Fatalf("bad")
-								}
+								g.handleExpr(param.Type, name, f.file, methodName, httpMethod)
 							}
 						}
 					}
-					queryParamsMap[methodName] = queryParams
+					g.data.QueryParamsMap[methodName] = queryParams
 
 					hasErr := false
 					if ftype.Results != nil {
@@ -204,7 +132,7 @@ func (g *Generator) cookClient(typeName string) {
 									hasErr = true
 									continue
 								}
-								resultTypeMap[methodName] = typeName
+								g.data.ResultTypeMap[methodName] = typeName
 							} else {
 								//todo:
 							}
@@ -220,21 +148,6 @@ func (g *Generator) cookClient(typeName string) {
 			return false
 		})
 	}
-
-	g.data.MethodList = methodList
-	g.data.PostList = postList
-	g.data.SigMap = sigMap
-	g.data.HTTPMethodMap = httpMethodMap
-	g.data.PathMap = pathMap
-	g.data.AliasMap = aliasMap
-	g.data.PathParamsMap = pathParansMap
-	g.data.QueryParamsMap = queryParamsMap
-	g.data.ResultTypeMap = resultTypeMap
-	g.data.BodyParamMap = bodyParamMap
-	g.data.QueryDictMap = queryDictMap
-	g.data.QueryParamsMap = queryParamsMap
-	g.data.DefaultHeaders = defHeaders
-	g.data.CtxParamMap = ctxParamMap
 }
 
 func exprToString(expr ast.Expr) string {
@@ -373,10 +286,6 @@ func isStructType(name string, file *ast.File) bool {
 		}
 	}
 	return false
-}
-
-func parsePreq() {
-
 }
 
 type fieldInfo struct {

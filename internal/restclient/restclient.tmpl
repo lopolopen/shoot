@@ -35,7 +35,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     }
     {{$httpmethod := index $.HTTPMethodMap $item}}
     {{$body := "nil"}}
-    {{if eq $httpmethod "POST"}}
+    {{if in $httpmethod $.BodyHTTPMethods}}
     {{$p := index $.BodyParamMap .}}
     bodyJson_, err := json.Marshal({{$p}})
     if err != nil {
@@ -54,7 +54,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     }{{- "\n" -}}
 
     {{- "\n" -}}
-    {{- if eq $httpmethod "GET" -}}
+    {{- if not (in $httpmethod $.BodyHTTPMethods) -}}
     {{- $qs := index $.QueryParamsMap $item -}}
     {{- $qd := index $.QueryDictMap $item -}}
     {{- if or $qs $qd -}}
