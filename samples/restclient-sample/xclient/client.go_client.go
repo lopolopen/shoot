@@ -3,7 +3,6 @@
 package xclient
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"restclientsample/xclient/dto"
-	"strings"
 	"time"
 
 	"github.com/lopolopen/shoot"
@@ -22,82 +20,7 @@ type client struct {
 	conf   *shoot.RestConf
 }
 
-func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageIdx int) (*User, error) {
-	path_ := "/users/{id}"
-	path_ = strings.Replace(path_, "{id}", fmt.Sprintf("%v", userID), 1)
-
-	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
-	if err != nil {
-		return nil, err
-	}
-
-	req_, err := http.NewRequestWithContext(ctx, "GET", url_, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	req_.Header.Add("Accept", "application/json")
-	req_.Header.Add("Tenant-Id", "123")
-
-	resp_, err := c.client.Do(req_)
-	if err != nil {
-		return nil, err
-	}
-	defer resp_.Body.Close()
-
-	body_, err := io.ReadAll(resp_.Body)
-	if err != nil {
-		return nil, err
-	}
-	var result_ User
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
-}
-
-func (c *client) QueryUsers(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error) {
-	path_ := "/users"
-
-	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
-	if err != nil {
-		return nil, err
-	}
-
-	bodyJson_, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	req_, err := http.NewRequestWithContext(ctx, "POST", url_, bytes.NewReader(bodyJson_))
-	if err != nil {
-		return nil, err
-	}
-
-	req_.Header.Add("Accept", "application/json")
-	req_.Header.Add("Content-Type", "application/json")
-	req_.Header.Add("Tenant-Id", "123")
-
-	resp_, err := c.client.Do(req_)
-	if err != nil {
-		return nil, err
-	}
-	defer resp_.Body.Close()
-
-	body_, err := io.ReadAll(resp_.Body)
-	if err != nil {
-		return nil, err
-	}
-	var result_ dto.QueryUsersResp
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
-}
-
-func (c *client) QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.QueryBooksResp, error) {
+func (c *client) QueryBooks0(ctx context.Context, req QueryBooksReq) (*dto.QueryBooksResp, error) {
 	path_ := "/books"
 
 	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
@@ -109,6 +32,13 @@ func (c *client) QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.Qu
 	if err != nil {
 		return nil, err
 	}
+
+	query_ := req_.URL.Query()
+	query_.Set("name", fmt.Sprintf("%v", req.Name()))
+	query_.Set("lang", fmt.Sprintf("%v", req.Language()))
+	query_.Set("page_size", fmt.Sprintf("%v", req.PageSize))
+	query_.Set("pageIndex", fmt.Sprintf("%v", req.PageIndex))
+	req_.URL.RawQuery = query_.Encode()
 
 	req_.Header.Add("Accept", "application/json")
 	req_.Header.Add("Tenant-Id", "123")
@@ -129,79 +59,6 @@ func (c *client) QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.Qu
 		return nil, err
 	}
 	return &result_, nil
-}
-
-func (c *client) QueryBooks2(ctx context.Context, groupID int, params map[string]interface{}) (*dto.Book, error) {
-	path_ := "/groups/{id}/books"
-	path_ = strings.Replace(path_, "{id}", fmt.Sprintf("%v", groupID), 1)
-
-	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
-	if err != nil {
-		return nil, err
-	}
-
-	req_, err := http.NewRequestWithContext(ctx, "GET", url_, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	query_ := req_.URL.Query()
-	for k, v := range params {
-		query_.Set(k, fmt.Sprintf("%v", v))
-	}
-	req_.URL.RawQuery = query_.Encode()
-
-	req_.Header.Add("Accept", "application/json")
-	req_.Header.Add("Tenant-Id", "123")
-
-	resp_, err := c.client.Do(req_)
-	if err != nil {
-		return nil, err
-	}
-	defer resp_.Body.Close()
-
-	body_, err := io.ReadAll(resp_.Body)
-	if err != nil {
-		return nil, err
-	}
-	var result_ dto.Book
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
-}
-
-func (c *client) UpdateUser(ctx context.Context, id int, user User) error {
-	path_ := "/users/{id}"
-	path_ = strings.Replace(path_, "{id}", fmt.Sprintf("%v", id), 1)
-
-	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
-	if err != nil {
-		return err
-	}
-
-	bodyJson_, err := json.Marshal(user)
-	if err != nil {
-		return err
-	}
-
-	req_, err := http.NewRequestWithContext(ctx, "PUT", url_, bytes.NewReader(bodyJson_))
-	if err != nil {
-		return err
-	}
-
-	req_.Header.Add("Accept", "application/json")
-	req_.Header.Add("Content-Type", "application/json")
-	req_.Header.Add("Tenant-Id", "123")
-
-	resp_, err := c.client.Do(req_)
-	if err != nil {
-		return err
-	}
-	defer resp_.Body.Close()
-
-	return nil
 }
 
 // ConfigHTTPClient allows customization of the underlying http.Client.

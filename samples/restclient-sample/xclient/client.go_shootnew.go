@@ -94,3 +94,77 @@ func (u *User) UnmarshalJSON(data []byte) error {
 
 // ShootNew exists solely to fulfill the NewShooter interface contract
 func (u User) ShootNew() { /*noop*/ }
+
+// NewQueryBooksReq constructs a new instance of type QueryBooksReq
+func NewQueryBooksReq(name string, language string) *QueryBooksReq {
+	return &QueryBooksReq{
+		name:     name,
+		language: language,
+	}
+}
+
+// Name gets the value of field name
+func (q *QueryBooksReq) Name() string {
+	return q.name
+}
+
+// Language gets the value of field language
+func (q *QueryBooksReq) Language() string {
+	return q.language
+}
+
+// SetName sets the value of field name
+func (q *QueryBooksReq) SetName(name_ string) {
+	q.name = name_
+}
+
+// SetLanguage sets the value of field language
+func (q *QueryBooksReq) SetLanguage(language_ string) {
+	q.language = language_
+}
+
+type _QueryBooksReq_marshal struct {
+	Name     string `json:"name"`
+	Language string
+
+	PageSize int
+
+	PageIndex int `json:"PageIndex"`
+}
+type _QueryBooksReq_unmarshal struct {
+	Name     string `json:"name"`
+	Language string
+
+	PageSize  int
+	PageIndex int `json:"PageIndex"`
+}
+
+// MarshalJSON serializes type QueryBooksReq to json bytes
+func (q QueryBooksReq) MarshalJSON() ([]byte, error) {
+	data := _QueryBooksReq_marshal{
+		Name:     q.Name(),
+		Language: q.Language(),
+
+		PageSize:  q.PageSize,
+		PageIndex: q.PageIndex,
+	}
+	return json.Marshal(data)
+}
+
+// UnmarshalJSON deserializes json bytes to type QueryBooksReq
+func (q *QueryBooksReq) UnmarshalJSON(data []byte) error {
+	var queryBooksReq_ _QueryBooksReq_unmarshal
+	if err := json.Unmarshal(data, &queryBooksReq_); err != nil {
+		return err
+	}
+	q.SetName(queryBooksReq_.Name)
+	q.SetLanguage(queryBooksReq_.Language)
+
+	q.PageSize = queryBooksReq_.PageSize
+	q.PageIndex = queryBooksReq_.PageIndex
+
+	return nil
+}
+
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (q QueryBooksReq) ShootNew() { /*noop*/ }

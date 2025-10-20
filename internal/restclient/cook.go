@@ -108,7 +108,6 @@ func (g *Generator) cookClient(typeName string) {
 					g.data.PathParamsMap[methodName] = realPathParams
 
 					//------------Params---------------
-					var queryParams []string
 					if ftype.Params != nil {
 						for _, param := range ftype.Params.List {
 							for _, name := range param.Names {
@@ -116,7 +115,6 @@ func (g *Generator) cookClient(typeName string) {
 							}
 						}
 					}
-					g.data.QueryParamsMap[methodName] = queryParams
 
 					hasErr := false
 					if ftype.Results != nil {

@@ -14,12 +14,16 @@ import (
 func (g *Generator) handleExpr(paramType ast.Expr, name *ast.Ident, file *ast.File, methodName, httpMethod string) {
 	switch t := paramType.(type) {
 	case *ast.SelectorExpr:
+		// fmt.Println(">>>>", "SelectorExpr")
 		g.handleSelectorExpr(t, name, methodName)
 	case *ast.Ident:
+		// fmt.Println(">>>>", "Ident")
 		g.handleIdent(t, name, file, methodName)
 	case *ast.MapType:
+		// fmt.Println(">>>>", "MapType")
 		g.handleMapType(name, methodName, httpMethod)
 	case *ast.StarExpr:
+		// fmt.Println(">>>>", "StarExpr")
 		g.handleExpr(t.X, name, file, methodName, httpMethod)
 	default:
 		log.Fatalf("unsupported param type %T of method %s", t, methodName)
@@ -38,33 +42,44 @@ func (g *Generator) handleSelectorExpr(paramType *ast.SelectorExpr, name *ast.Id
 		g.data.CtxParamMap[methodName] = name.Name
 	} else {
 		g.setBodyParamName(methodName, name.Name)
-		fullPath, err := getPkgDir(pkgPath)
-		if err != nil {
-			log.Fatalf("get pkg dir: %s", err)
-		}
-		fields, err := extractStructFields(fullPath, paramType.Sel.Name)
-		if err != nil {
-			log.Fatalf("extract struct fields: %s", err)
-		}
-		for _, f := range fields {
-			var key, value string
-			if f.IsExported {
-				key = transfer.ToCamelCase(f.Name)
-				value = fmt.Sprintf("%s.%s", name.Name, f.Name)
-			} else {
-				key = f.Name
-				value = fmt.Sprintf("%s.%s()", name.Name, transfer.ToPascalCase(f.Name))
-			}
-			g.data.QueryParamsMap[methodName] = append(g.data.QueryParamsMap[methodName], value)
+		g.handleStruct(paramType, paramType.Sel.Name, name, methodName)
+	}
+}
 
-			if g.data.AliasMap[methodName] == nil {
-				g.data.AliasMap[methodName] = make(map[string]string)
-			}
-			if f.Alias != "" {
-				g.data.AliasMap[methodName][value] = f.Alias
-			} else {
-				g.data.AliasMap[methodName][value] = key
-			}
+func (g *Generator) handleStruct(paramType ast.Expr, paramTypeName string, name *ast.Ident, methodName string) {
+	typ := g.pkg.pkg.TypesInfo.Types[paramType].Type
+	named, ok := typ.(*types.Named)
+	if !ok {
+		return
+	}
+	obj := named.Obj()
+	pkgPath := obj.Pkg().Path()
+	fullPath, err := getPkgDir(pkgPath)
+	if err != nil {
+		log.Fatalf("get pkg dir: %s", err)
+	}
+	fields, err := extractStructFields(fullPath, paramTypeName)
+	if err != nil {
+		log.Fatalf("extract struct fields: %s", err)
+	}
+	for _, f := range fields {
+		var key, value string
+		if f.IsExported {
+			key = transfer.ToCamelCase(f.Name)
+			value = fmt.Sprintf("%s.%s", name.Name, f.Name)
+		} else {
+			key = f.Name
+			value = fmt.Sprintf("%s.%s()", name.Name, transfer.ToPascalCase(f.Name))
+		}
+		g.data.QueryParamsMap[methodName] = append(g.data.QueryParamsMap[methodName], value)
+
+		if g.data.AliasMap[methodName] == nil {
+			g.data.AliasMap[methodName] = make(map[string]string)
+		}
+		if f.Alias != "" {
+			g.data.AliasMap[methodName][value] = f.Alias
+		} else {
+			g.data.AliasMap[methodName][value] = key
 		}
 	}
 }
@@ -72,6 +87,7 @@ func (g *Generator) handleSelectorExpr(paramType *ast.SelectorExpr, name *ast.Id
 func (g *Generator) handleIdent(paramType *ast.Ident, name *ast.Ident, file *ast.File, methodName string) {
 	if isStructType(paramType.Name, file) {
 		g.setBodyParamName(methodName, name.Name)
+		g.handleStruct(paramType, paramType.Name, name, methodName)
 	} else {
 		if shoot.Contains(g.data.PathParamsMap[methodName], name.Name) {
 			return
