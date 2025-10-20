@@ -40,31 +40,31 @@ type Client interface {
 	//shoot: headers={Tenant-Id:123}
 	shoot.RestClient[Client]
 
-	// //shoot: Get("/users/{id}")
-	// //shoot: alias={userID:id},{pageSize:size},{pageIdx:page_idx}
-	// GetUser(ctx context.Context, userID string, pageSize int, pageIdx int) (*User, error)
+	//shoot: Get("/users/{id}")
+	//shoot: alias={userID:id},{pageSize:size},{pageIdx:page_idx}
+	GetUser(ctx context.Context, userID string, pageSize int, pageIdx int) (*User, error)
 
-	// //shoot: Post("/users")
-	// QueryUsers(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error)
+	//shoot: Post("/users")
+	QueryUsers(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error)
 
-	// // //shoot: Post("/users2")
-	// // //shoot: headers={Content-Type:application/x-www-form-urlencoded}                           //todo: support this
-	// // QueryUsers2(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error)
+	// //shoot: Post("/users2")
+	// //shoot: headers={Content-Type:application/x-www-form-urlencoded}                           //todo: support this
+	// QueryUsers2(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error)
 
-	// //shoot: Get("/books")
-	// QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.QueryBooksResp, error)
+	//shoot: Get("/books")
+	QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.QueryBooksResp, error)
 
 	//shoot: Get("/books")
 	QueryBooks0(ctx context.Context, req QueryBooksReq) (*dto.QueryBooksResp, error)
 
-	// //shoot: Get("/groups/{id}/books")
-	// //shoot: alias={groupID:id}
-	// QueryBooks2(ctx context.Context, groupID int, params map[string]interface{}) (*dto.Book, error) //todo: return array?
+	//shoot: Get("/groups/{id}/books")
+	//shoot: alias={groupID:id}
+	QueryBooks2(ctx context.Context, groupID int, params map[string]interface{}) (*dto.Book, error) //todo: return array?
 
-	// //shoot: Put("/users/{id}")
-	// UpdateUser(ctx context.Context, id int, user User) error
+	//shoot: Put("/users/{id}")
+	UpdateUser(ctx context.Context, id int, user User) error
 
-	// NoComment(ctx context.Context)
+	NoComment(ctx context.Context)
 }
 
 func (c *client) NoComment(ctx context.Context) {
