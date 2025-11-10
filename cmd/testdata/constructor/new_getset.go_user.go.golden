@@ -3,11 +3,12 @@
 package constructor
 
 // NewUser constructs a new instance of type User
-func NewUser(id int, name string, age int) *User {
+func NewUser(id int, name string, age int, avatarUrl string) *User {
 	return &User{
-		id:   id,
-		name: name,
-		age:  age,
+		id:         id,
+		name:       name,
+		age:        age,
+		avatar_url: avatarUrl,
 	}
 }
 
@@ -26,6 +27,11 @@ func (u *User) Age() int {
 	return u.age
 }
 
+// AvatarUrl gets the value of field avatar_url
+func (u *User) AvatarUrl() string {
+	return u.avatar_url
+}
+
 // SetId sets the value of field id
 func (u *User) SetId(id_ int) {
 	u.id = id_
@@ -39,6 +45,11 @@ func (u *User) SetName(name_ string) {
 // SetAge sets the value of field age
 func (u *User) SetAge(age_ int) {
 	u.age = age_
+}
+
+// SetAvatarUrl sets the value of field avatar_url
+func (u *User) SetAvatarUrl(avatar_url_ string) {
+	u.avatar_url = avatar_url_
 }
 
 // ShootNew exists solely to fulfill the NewShooter interface contract
