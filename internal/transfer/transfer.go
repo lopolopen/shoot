@@ -20,6 +20,7 @@ func ToCamelCase(s string) string {
 		return s
 	}
 
+	s = ToPascalCase(s)
 	runes := []rune(s)
 	runes[0] = unicode.ToLower(runes[0])
 	return string(runes)
@@ -30,7 +31,14 @@ func ToPascalCase(s string) string {
 		return s
 	}
 
-	runes := []rune(s)
-	runes[0] = unicode.ToUpper(runes[0])
-	return string(runes)
+	parts := strings.Split(s, "_")
+	for i, part := range parts {
+		if len(part) == 0 {
+			continue
+		}
+		runes := []rune(part)
+		runes[0] = unicode.ToUpper(runes[0])
+		parts[i] = string(runes)
+	}
+	return strings.Join(parts, "")
 }

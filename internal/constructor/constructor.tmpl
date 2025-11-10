@@ -21,10 +21,10 @@ import "github.com/lopolopen/shoot"
 {{- end}}
 
 // New{{.TypeName}} constructs a new instance of type {{.TypeName}}
-func New{{.TypeName}}({{range .NewList}}{{.}} {{typeof .}},{{end}}) *{{.TypeName}} {
+func New{{.TypeName}}({{range .NewList}}{{camelCase .}} {{typeof .}},{{end}}) *{{.TypeName}} {
 	return &{{.TypeName}}{ 
 		{{range .NewList -}}
-		{{.}}: {{.}},
+		{{.}}: {{camelCase .}},
 		{{end}}
 	}
 }
