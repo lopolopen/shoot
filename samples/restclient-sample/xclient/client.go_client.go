@@ -50,16 +50,19 @@ func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageI
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ User
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ User
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryUsers(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error) {
@@ -90,16 +93,19 @@ func (c *client) QueryUsers(ctx context.Context, req dto.QueryUsersReq) (*dto.Qu
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ dto.QueryUsersResp
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ dto.QueryUsersResp
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.QueryBooksResp, error) {
@@ -131,16 +137,19 @@ func (c *client) QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.Qu
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ dto.QueryBooksResp
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ dto.QueryBooksResp
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryBooks0(ctx context.Context, req QueryBooksReq) (*dto.QueryBooksResp, error) {
@@ -172,16 +181,19 @@ func (c *client) QueryBooks0(ctx context.Context, req QueryBooksReq) (*dto.Query
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ dto.QueryBooksResp
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ dto.QueryBooksResp
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryBooks2(ctx context.Context, groupID int, params map[string]interface{}) (*dto.Book, error) {
@@ -213,16 +225,19 @@ func (c *client) QueryBooks2(ctx context.Context, groupID int, params map[string
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ dto.Book
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ dto.Book
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) UpdateUser(ctx context.Context, id int, user User) error {
@@ -253,6 +268,13 @@ func (c *client) UpdateUser(ctx context.Context, id int, user User) error {
 		return err
 	}
 	defer resp_.Body.Close()
+
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return err
+	}
 
 	return nil
 }

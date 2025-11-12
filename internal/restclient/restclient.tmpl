@@ -13,11 +13,10 @@ type {{camelCase .TypeName}} struct{
 
 {{range $item := .MethodList}}
 func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
-    {{- $r := index $.ResultTypeMap . -}}
-    {{- $return := "err" -}}
-    {{- if $r -}}
-    {{- $return = "nil, err" -}}
-    {{- end}}
+    {{- $retlist := index $.ReturnListMap . -}}
+    {{- $errret := index $.ErrReturnMap . -}}
+    {{- $rets := index $.ReturnsMap . -}}
+    
     path_ := "{{index $.PathMap .}}"{{"\n"}}
     {{- $pms := index $.PathParamsMap . -}}
     {{- if $pms -}}
@@ -31,7 +30,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
 
     url_, err := url.JoinPath(c.conf.BaseURL(), path_)
     if err != nil {
-        return {{$return}}
+        return {{$errret}}
     }
     {{$httpmethod := index $.HTTPMethodMap $item}}
     {{$body := "nil"}}
@@ -39,7 +38,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     {{$p := index $.BodyParamMap .}}
     bodyJson_, err := json.Marshal({{$p}})
     if err != nil {
-        return {{$return}}
+        return {{$errret}}
     }
     {{$body = "bytes.NewReader(bodyJson_)"}}
     {{end}}
@@ -50,7 +49,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     req_, err := http.NewRequest("{{$httpmethod}}", url_, {{$body}})
     {{end -}}
     if err != nil {
-        return {{$return}}
+        return {{$errret}}
     }{{- "\n" -}}
 
     {{- "\n" -}}
@@ -84,22 +83,42 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
 
     resp_, err := c.client.Do(req_)
     if err != nil {
-        return {{$return}}
+        return {{$errret}}
     }
     defer resp_.Body.Close()
-    {{if $r}}
-    body_, err := io.ReadAll(resp_.Body)
-	if err != nil {
-		return {{$return}}
-	}
-    var result_ {{$r}}
-    err = json.Unmarshal(body_, &result_)
-    if err != nil {
-		return {{$return}}
-	}
-    return &result_, nil
-    {{else}}
+
+    body_, _ := io.ReadAll(resp_.Body)
+
+    if resp_.StatusCode >= 500 {
+        err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+        return {{$errret}}
+    }
+
+    {{- if eq (len $retlist) 0 -}}{{"\n"}}
     return nil
+    {{- else if eq (len $retlist) 1 -}}{{"\n"}}
+    var r_ {{index $retlist 0}}
+    err = json.Unmarshal(body_, &r_)
+    if err != nil {
+		return {{$errret}}
+	}
+    return {{index $rets 0}}, nil
+    {{else}}
+    if resp_.StatusCode < 300 {
+        var r_ {{index $retlist 0}}
+        err = json.Unmarshal(body_, &r_)
+        if err != nil {
+            return {{$errret}}
+        }
+        return {{index $rets 0}}, nil, nil
+    } else {
+        var r_ {{index $retlist 1}}
+        err = json.Unmarshal(body_, &r_)
+        if err != nil {
+            return {{$errret}}
+        }
+        return nil, {{index $rets 1}}, nil
+    }
     {{- end -}}
 }
 {{end}}

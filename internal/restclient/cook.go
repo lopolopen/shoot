@@ -15,6 +15,12 @@ import (
 	"strings"
 )
 
+var errReturnArr [3]string = [3]string{
+	0: "err",
+	1: "nil, err",
+	2: "nil, nil, err",
+}
+
 func (g *Generator) cookClient(typeName string) {
 	g.data.SigMap = make(map[string]string)
 	g.data.HTTPMethodMap = make(map[string]string)
@@ -24,7 +30,9 @@ func (g *Generator) cookClient(typeName string) {
 	g.data.QueryParamsMap = make(map[string][]string)
 	g.data.BodyParamMap = make(map[string]string)
 	g.data.QueryDictMap = make(map[string]string)
-	g.data.ResultTypeMap = make(map[string]string)
+	g.data.ReturnListMap = make(map[string][]string)
+	g.data.ErrReturnMap = make(map[string]string)
+	g.data.ReturnsMap = make(map[string][]string)
 	g.data.CtxParamMap = make(map[string]string)
 	g.data.DefaultHeaders = map[string]map[string]string{
 		http.MethodGet: {
@@ -116,29 +124,42 @@ func (g *Generator) cookClient(typeName string) {
 						}
 					}
 
-					hasErr := false
-					if ftype.Results != nil {
-						if len(ftype.Results.List) > 2 {
-							log.Fatalf("method %s must not return more than two values", methodName)
+					//------------Results---------------
+					if ftype.Results == nil || len(ftype.Results.List) == 0 {
+						log.Fatalf("method %s should at least return an error", methodName)
+					}
+
+					if len(ftype.Results.List) > 3 {
+						log.Fatalf("method %s must not return more than three values", methodName)
+					}
+
+					n := len(ftype.Results.List)
+					last := exprToString(ftype.Results.List[n-1].Type)
+					if last != "error" {
+						log.Fatalf("the last return value of method %s must be an error", methodName)
+					}
+
+					var returnList []string
+					var returns []string
+					for i := 0; i < n-1; i++ {
+						r := ftype.Results.List[i]
+						if len(r.Names) > 0 {
+							log.Fatalf("method %s with named return list is not supported", methodName)
 						}
 
-						//------------Results---------------
-						for _, result := range ftype.Results.List {
-							if len(result.Names) == 0 {
-								typeName := getUnderlyingTypeName(result.Type)
-								if typeName == "error" {
-									hasErr = true
-									continue
-								}
-								g.data.ResultTypeMap[methodName] = typeName
-							} else {
-								//todo:
-							}
+						name, isPtr := getReturnTypeName(r.Type)
+						returnList = append(returnList, name)
+						if isPtr {
+							returns = append(returns, "&r_")
+						} else {
+							returns = append(returns, "r_")
 						}
 					}
-					if !hasErr {
-						log.Fatalf("method %s must return an error", methodName)
-					}
+
+					g.data.ReturnListMap[methodName] = returnList
+					g.data.ErrReturnMap[methodName] = errReturnArr[n-1]
+					g.data.ReturnsMap[methodName] = returns
+
 					//todo: check alias={a:alias}, a exists?
 				}
 			}
@@ -253,19 +274,39 @@ func parseAlias(doc string) map[string]string {
 	return kvMap
 }
 
-func getUnderlyingTypeName(expr ast.Expr) string {
+// func getUnderlyingTypeName(expr ast.Expr) string {
+// 	switch t := expr.(type) {
+// 	case *ast.Ident:
+// 		return t.Name
+// 	case *ast.StarExpr:
+// 		// 指针类型，递归获取底层类型
+// 		return getUnderlyingTypeName(t.X)
+// 	case *ast.SelectorExpr:
+// 		// 处理像 pkg.Type 这样的类型
+// 		return getUnderlyingTypeName(t.X) + "." + t.Sel.Name
+// 	case *ast.ArrayType:
+// 		// 处理数组或切片类型
+// 		return "[]" + getUnderlyingTypeName(t.Elt)
+// 	default:
+// 		return fmt.Sprintf("%T", expr)
+// 	}
+// }
+
+func getReturnTypeName(expr ast.Expr) (string, bool) {
+	isPtr := false
+	var typeName string
 	switch t := expr.(type) {
-	case *ast.Ident:
-		return t.Name
 	case *ast.StarExpr:
-		// 指针类型，递归获取底层类型
-		return getUnderlyingTypeName(t.X)
-	case *ast.SelectorExpr:
-		// 处理像 context.Context 这样的类型
-		return getUnderlyingTypeName(t.X) + "." + t.Sel.Name
+		typeName = exprToString(t.X)
+		isPtr = true
+	case *ast.ArrayType:
+		typeName = exprToString(t)
+	case *ast.MapType:
+		typeName = exprToString(t)
 	default:
-		return fmt.Sprintf("%T", expr)
+		log.Fatalf("unsupported return type: %T", expr)
 	}
+	return typeName, isPtr
 }
 
 func isStructType(name string, file *ast.File) bool {
