@@ -10,16 +10,16 @@ import (
 
 type Data struct {
 	shoot.BaseData
-	MethodList []string
-	// PostList        []string
-	// PutList         []string
+	MethodList      []string
 	SigMap          map[string]string
 	HTTPMethodMap   map[string]string
 	PathMap         map[string]string
 	AliasMap        map[string]map[string]string
 	PathParamsMap   map[string][]string
 	QueryParamsMap  map[string][]string
-	ResultTypeMap   map[string]string
+	ReturnListMap   map[string][]string // method return list
+	ErrReturnMap    map[string]string
+	ReturnsMap      map[string][]string
 	BodyParamMap    map[string]string
 	QueryDictMap    map[string]string
 	DefaultHeaders  map[string]map[string]string

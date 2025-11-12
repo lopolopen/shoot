@@ -43,16 +43,19 @@ func (c *client) GetUser(ctx context.Context, userID string) (*User, error) {
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ User
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ User
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryUsers(ctx context.Context, key string, pageSize int, pageIdx int) (*QueryUsersResp, error) {
@@ -82,16 +85,19 @@ func (c *client) QueryUsers(ctx context.Context, key string, pageSize int, pageI
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ QueryUsersResp
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ QueryUsersResp
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryUsers2(ctx context.Context, params map[string]string) (*QueryUsersResp, error) {
@@ -121,16 +127,19 @@ func (c *client) QueryUsers2(ctx context.Context, params map[string]string) (*Qu
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ QueryUsersResp
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ QueryUsersResp
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryUsers3(ctx context.Context, params *map[string]string) (*QueryUsersResp, error) {
@@ -160,16 +169,19 @@ func (c *client) QueryUsers3(ctx context.Context, params *map[string]string) (*Q
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ QueryUsersResp
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ QueryUsersResp
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryUsers4(ctx context.Context, req QueryUsersReq) (*QueryUsersResp, error) {
@@ -199,16 +211,19 @@ func (c *client) QueryUsers4(ctx context.Context, req QueryUsersReq) (*QueryUser
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ QueryUsersResp
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ QueryUsersResp
-	err = json.Unmarshal(body_, &result_)
-	if err != nil {
-		return nil, err
-	}
-	return &result_, nil
+	return &r_, nil
 }
 
 func (c *client) QueryUsers5(ctx context.Context, req *QueryUsersReq) (*QueryUsersResp, error) {
@@ -238,16 +253,61 @@ func (c *client) QueryUsers5(ctx context.Context, req *QueryUsersReq) (*QueryUse
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ QueryUsersResp
+	err = json.Unmarshal(body_, &r_)
 	if err != nil {
 		return nil, err
 	}
-	var result_ QueryUsersResp
-	err = json.Unmarshal(body_, &result_)
+	return &r_, nil
+}
+
+func (c *client) QueryUsers6(ctx context.Context, req *QueryUsersReq) ([]User, error) {
+	path_ := "/users"
+
+	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
 	if err != nil {
 		return nil, err
 	}
-	return &result_, nil
+
+	req_, err := http.NewRequestWithContext(ctx, "GET", url_, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	query_ := req_.URL.Query()
+	query_.Set("name", fmt.Sprintf("%v", req.Name))
+	query_.Set("size", fmt.Sprintf("%v", req.PageSize))
+	query_.Set("page_idx", fmt.Sprintf("%v", req.PageIdx))
+	req_.URL.RawQuery = query_.Encode()
+
+	req_.Header.Add("Accept", "application/json")
+
+	resp_, err := c.client.Do(req_)
+	if err != nil {
+		return nil, err
+	}
+	defer resp_.Body.Close()
+
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return nil, err
+	}
+
+	var r_ []User
+	err = json.Unmarshal(body_, &r_)
+	if err != nil {
+		return nil, err
+	}
+	return r_, nil
 }
 
 func (c *client) UpdateUser(ctx context.Context, id int, user User) error {
@@ -277,6 +337,13 @@ func (c *client) UpdateUser(ctx context.Context, id int, user User) error {
 		return err
 	}
 	defer resp_.Body.Close()
+
+	body_, _ := io.ReadAll(resp_.Body)
+
+	if resp_.StatusCode >= 500 {
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+		return err
+	}
 
 	return nil
 }

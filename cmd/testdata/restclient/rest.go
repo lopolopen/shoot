@@ -42,6 +42,9 @@ type Client interface {
 	//shoot: Get("/users")
 	QueryUsers5(ctx context.Context, req *QueryUsersReq) (*QueryUsersResp, error)
 
+	//shoot: Get("/users")
+	QueryUsers6(ctx context.Context, req *QueryUsersReq) ([]User, error)
+
 	//shoot: Put("/users/{id}")
 	UpdateUser(ctx context.Context, id int, user User) error
 }
