@@ -44,6 +44,7 @@ func (g *Generator) ParseFlags() {
 	opt := sub.Bool("opt", false, "generate functional option pattern constructor (alias for -option)")
 	separate := sub.Bool("separate", false, "each type has its own go file")
 	s := sub.Bool("s", false, "each type has its own go file (alias for separate)")
+	short := sub.Bool("short", false, "generate short config function name (no 'OfType' suffix)")
 	verbose := sub.Bool("verbose", false, "verbose output")
 	v := sub.Bool("v", false, "verbose output (alias for verbose)")
 
@@ -82,6 +83,7 @@ func (g *Generator) ParseFlags() {
 		json:      *json,
 		opt:       *opt || *option,
 		separate:  *s || *separate || *fileName == "",
+		short:     *short,
 		verbose:   *v || *verbose,
 		dir:       dir,
 	}
