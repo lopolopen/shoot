@@ -22,7 +22,7 @@ type client struct {
 	conf   *shoot.RestConf
 }
 
-func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageIdx int) (*User, error) {
+func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageIdx *int) (*User, error) {
 	path_ := "/users/{id}"
 	path_ = strings.Replace(path_, "{id}", fmt.Sprintf("%v", userID), 1)
 
@@ -38,7 +38,9 @@ func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageI
 
 	query_ := req_.URL.Query()
 	query_.Set("size", fmt.Sprintf("%v", pageSize))
-	query_.Set("page_idx", fmt.Sprintf("%v", pageIdx))
+	if pageIdx != nil {
+		query_.Set("page_idx", fmt.Sprintf("%v", *pageIdx))
+	}
 	req_.URL.RawQuery = query_.Encode()
 
 	req_.Header.Add("Accept", "application/json")
@@ -166,10 +168,14 @@ func (c *client) QueryBooks0(ctx context.Context, req QueryBooksReq) (*dto.Query
 	}
 
 	query_ := req_.URL.Query()
-	query_.Set("name", fmt.Sprintf("%v", req.Name()))
+	if req.Name() != nil {
+		query_.Set("name", fmt.Sprintf("%v", *req.Name()))
+	}
 	query_.Set("lang", fmt.Sprintf("%v", req.Language()))
 	query_.Set("page_size", fmt.Sprintf("%v", req.PageSize))
-	query_.Set("pageIndex", fmt.Sprintf("%v", req.PageIndex))
+	if req.PageIndex != nil {
+		query_.Set("pageIndex", fmt.Sprintf("%v", *req.PageIndex))
+	}
 	req_.URL.RawQuery = query_.Encode()
 
 	req_.Header.Add("Accept", "application/json")

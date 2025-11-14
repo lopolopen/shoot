@@ -17,6 +17,7 @@ type Data struct {
 	AliasMap        map[string]map[string]string
 	PathParamsMap   map[string][]string
 	QueryParamsMap  map[string][]string
+	IsPtrMap        map[string]map[string]bool
 	ReturnListMap   map[string][]string // method return list
 	ErrReturnMap    map[string]string
 	ReturnsMap      map[string][]string

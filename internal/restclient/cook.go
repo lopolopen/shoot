@@ -28,6 +28,7 @@ func (g *Generator) cookClient(typeName string) {
 	g.data.AliasMap = make(map[string]map[string]string)
 	g.data.PathParamsMap = make(map[string][]string)
 	g.data.QueryParamsMap = make(map[string][]string)
+	g.data.IsPtrMap = make(map[string]map[string]bool)
 	g.data.BodyParamMap = make(map[string]string)
 	g.data.QueryDictMap = make(map[string]string)
 	g.data.ReturnListMap = make(map[string][]string)
@@ -116,10 +117,16 @@ func (g *Generator) cookClient(typeName string) {
 					g.data.PathParamsMap[methodName] = realPathParams
 
 					//------------Params---------------
+					if g.data.IsPtrMap[methodName] == nil {
+						g.data.IsPtrMap[methodName] = make(map[string]bool)
+					}
 					if ftype.Params != nil {
 						for _, param := range ftype.Params.List {
 							for _, name := range param.Names {
 								g.handleExpr(param.Type, name, f.file, methodName, httpMethod)
+								if _, ok := param.Type.(*ast.StarExpr); ok {
+									g.data.IsPtrMap[methodName][name.Name] = true
+								}
 							}
 						}
 					}
@@ -333,6 +340,7 @@ type fieldInfo struct {
 	Tag        string
 	Alias      string
 	IsExported bool
+	IsPtr      bool
 }
 
 func extractStructFields(pkgPath, typeName string) ([]fieldInfo, error) {
@@ -372,6 +380,7 @@ func extractStructFields(pkgPath, typeName string) ([]fieldInfo, error) {
 							rawTag = field.Tag.Value
 							alias = parseFieldAlias(rawTag)
 						}
+						_, ok := field.Type.(*ast.StarExpr)
 						for _, name := range field.Names {
 							fields = append(fields, fieldInfo{
 								Name:       name.Name,
@@ -379,6 +388,7 @@ func extractStructFields(pkgPath, typeName string) ([]fieldInfo, error) {
 								Tag:        rawTag,
 								Alias:      alias,
 								IsExported: name.IsExported(),
+								IsPtr:      ok,
 							})
 						}
 						// Handle anonymous fields (embedded structs)
