@@ -28,10 +28,10 @@ type User struct {
 }
 
 type QueryBooksReq struct {
-	name      string
+	name      *string
 	language  string `shoot:"alias=lang,omitempty"`
 	PageSize  int    `shoot:"alias=page_size"`
-	PageIndex int
+	PageIndex *int
 	// PubDate   time.Time `shoot:"dateformat=2006-01-02"` //todo: support this
 	// Ignore    string    `shoot:"-"`                     //todo: support this
 }
@@ -42,7 +42,7 @@ type Client interface {
 
 	//shoot: Get("/users/{id}")
 	//shoot: alias={userID:id},{pageSize:size},{pageIdx:page_idx}
-	GetUser(ctx context.Context, userID string, pageSize int, pageIdx int) (*User, error)
+	GetUser(ctx context.Context, userID string, pageSize int, pageIdx *int) (*User, error)
 
 	//shoot: Post("/users")
 	QueryUsers(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error)

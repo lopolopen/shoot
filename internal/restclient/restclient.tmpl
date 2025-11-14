@@ -56,6 +56,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     {{- if not (in $httpmethod $.BodyHTTPMethods) -}}
     {{- $qs := index $.QueryParamsMap $item -}}
     {{- $qd := index $.QueryDictMap $item -}}
+    {{- $isPtrMap := index $.IsPtrMap $item -}}
     {{- if or $qs $qd -}}
     query_ := req_.URL.Query(){{"\n"}}
     {{- end -}}
@@ -63,7 +64,13 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     {{- range $key := $qs -}}
     {{- $alias := index (index $.AliasMap $item) $key -}}
     {{- if not $alias}}{{$alias = $key}}{{end -}}
-    query_.Set("{{$alias}}", fmt.Sprintf("%v", {{$key}})){{"\n"}}
+    {{- if index $isPtrMap $key -}}
+    if {{$key}} != nil {
+        query_.Set("{{$alias}}", fmt.Sprintf("%v", *{{$key}}))
+    }{{"\n"}}
+    {{- else -}}
+    query_.Set("{{$alias}}", fmt.Sprintf("%v",{{$key}})){{"\n"}}
+    {{- end -}}
     {{- end -}}
     {{- end -}}
     {{- if $qd -}}
