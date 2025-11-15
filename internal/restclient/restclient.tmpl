@@ -13,11 +13,13 @@ type {{camelCase .TypeName}} struct{
 
 {{range $item := .MethodList}}
 func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
-    {{- $r := index $.ResultTypeMap . -}}
-    {{- $return := "err" -}}
-    {{- if $r -}}
-    {{- $return = "nil, err" -}}
-    {{- end}}
+    {{- $errret := index $.ErrReturnMap . -}}
+    {{- $result := index $.ReturnResultMap . -}}
+    {{- $ptr := "" -}}
+    {{- if $result.IsPtr -}}
+    {{- $ptr = "&" -}}
+    {{- end -}}
+    
     path_ := "{{index $.PathMap .}}"{{"\n"}}
     {{- $pms := index $.PathParamsMap . -}}
     {{- if $pms -}}
@@ -31,7 +33,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
 
     url_, err := url.JoinPath(c.conf.BaseURL(), path_)
     if err != nil {
-        return {{$return}}
+        return {{$errret}}
     }
     {{$httpmethod := index $.HTTPMethodMap $item}}
     {{$body := "nil"}}
@@ -39,7 +41,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     {{$p := index $.BodyParamMap .}}
     bodyJson_, err := json.Marshal({{$p}})
     if err != nil {
-        return {{$return}}
+        return {{$errret}}
     }
     {{$body = "bytes.NewReader(bodyJson_)"}}
     {{end}}
@@ -50,13 +52,14 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     req_, err := http.NewRequest("{{$httpmethod}}", url_, {{$body}})
     {{end -}}
     if err != nil {
-        return {{$return}}
+        return {{$errret}}
     }{{- "\n" -}}
 
     {{- "\n" -}}
     {{- if not (in $httpmethod $.BodyHTTPMethods) -}}
     {{- $qs := index $.QueryParamsMap $item -}}
     {{- $qd := index $.QueryDictMap $item -}}
+    {{- $isPtrMap := index $.IsParamPtrMap $item -}}
     {{- if or $qs $qd -}}
     query_ := req_.URL.Query(){{"\n"}}
     {{- end -}}
@@ -64,7 +67,13 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     {{- range $key := $qs -}}
     {{- $alias := index (index $.AliasMap $item) $key -}}
     {{- if not $alias}}{{$alias = $key}}{{end -}}
-    query_.Set("{{$alias}}", fmt.Sprintf("%v", {{$key}})){{"\n"}}
+    {{- if index $isPtrMap $key -}}
+    if {{$key}} != nil {
+        query_.Set("{{$alias}}", fmt.Sprintf("%v", *{{$key}}))
+    }{{"\n"}}
+    {{- else -}}
+    query_.Set("{{$alias}}", fmt.Sprintf("%v",{{$key}})){{"\n"}}
+    {{- end -}}
     {{- end -}}
     {{- end -}}
     {{- if $qd -}}
@@ -84,22 +93,40 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
 
     resp_, err := c.client.Do(req_)
     if err != nil {
-        return {{$return}}
+        return {{$errret}}
     }
     defer resp_.Body.Close()
-    {{if $r}}
-    body_, err := io.ReadAll(resp_.Body)
-	if err != nil {
-		return {{$return}}
-	}
-    var result_ {{$r}}
-    err = json.Unmarshal(body_, &result_)
+
+    switch {
+        case resp_.StatusCode >= 500:
+            body_, _ := io.ReadAll(resp_.Body)
+            err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+        case resp_.StatusCode >= 400:
+            body_, _ := io.ReadAll(resp_.Body)
+            err = fmt.Errorf("client error %d: %s", resp_.StatusCode, string(body_))
+        case resp_.StatusCode >= 300 || resp_.StatusCode < 200:
+            err = fmt.Errorf("not supported error %d",resp_.StatusCode)
+    }{{- "\n" -}}
+
+    {{- if not $result.Type -}}
     if err != nil {
-		return {{$return}}
-	}
-    return &result_, nil
-    {{else}}
-    return nil
+        return resp_, err
+    }
+    return resp_, nil
+    {{- else -}}
+    if err != nil {
+        return nil, resp_, err
+    }
+
+    var r_ {{$result.Type}}
+    err = json.NewDecoder(resp_.Body).Decode(&r_)
+    if err == io.EOF {
+        err = nil //ignore EOF errors caused by empty response body
+    }
+    if err != nil {
+        return nil, resp_, err
+    }
+    return {{$ptr}}r_, resp_, nil
     {{- end -}}
 }
 {{end}}

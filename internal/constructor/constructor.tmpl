@@ -42,8 +42,12 @@ func ({{$this}} *{{.TypeName}})With(opts ...{{$shoot}}Option[{{.TypeName}}, *{{.
 }
 
 {{range .AllList -}}
-// {{pascalCase .}}Of{{$.TypeName}} is a configuration for the filed {{.}}
-func {{pascalCase .}}Of{{$.TypeName}}({{camelCase .}}_ {{typeof .}}){{$shoot}}Option[{{$.TypeName}}, *{{$.TypeName}}] {
+{{- $fname := pascalCase . -}}
+{{- if not $.Short -}}
+{{- $fname = printf "%s%s%s" (pascalCase .) "Of" $.TypeName -}}
+{{- end -}}
+// {{$fname }} is a configuration for the filed {{.}}
+func {{$fname}}({{camelCase .}}_ {{typeof .}}){{$shoot}}Option[{{$.TypeName}}, *{{$.TypeName}}] {
 	 return func({{$this}} *{{$.TypeName}}) {
         {{$this}}.{{.}} = {{camelCase .}}_ 
     }
