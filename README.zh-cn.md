@@ -130,23 +130,25 @@ type client struct {
 	conf   *shoot.RestConf
 }
 
-func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageIdx int) (*User, error) {
+func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageIdx *int) (*User, *http.Response, error) {
 	path_ := "/users/{id}"
 	path_ = strings.Replace(path_, "{id}", fmt.Sprintf("%v", userID), 1)
 
 	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	req_, err := http.NewRequestWithContext(ctx, "GET", url_, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	query_ := req_.URL.Query()
 	query_.Set("size", fmt.Sprintf("%v", pageSize))
-	query_.Set("page_idx", fmt.Sprintf("%v", pageIdx))
+	if pageIdx != nil {
+		query_.Set("page_idx", fmt.Sprintf("%v", *pageIdx))
+	}
 	req_.URL.RawQuery = query_.Encode()
 
 	req_.Header.Add("Accept", "application/json")
@@ -154,20 +156,33 @@ func (c *client) GetUser(ctx context.Context, userID string, pageSize int, pageI
 
 	resp_, err := c.client.Do(req_)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
-	if err != nil {
-		return nil, err
+	switch {
+	case resp_.StatusCode >= 500:
+		body_, _ := io.ReadAll(resp_.Body)
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+	case resp_.StatusCode >= 400:
+		body_, _ := io.ReadAll(resp_.Body)
+		err = fmt.Errorf("client error %d: %s", resp_.StatusCode, string(body_))
+	case resp_.StatusCode >= 300 || resp_.StatusCode < 200:
+		err = fmt.Errorf("not supported error %d", resp_.StatusCode)
 	}
-	var result_ User
-	err = json.Unmarshal(body_, &result_)
 	if err != nil {
-		return nil, err
+		return nil, resp_, err
 	}
-	return &result_, nil
+
+	var r_ User
+	err = json.NewDecoder(resp_.Body).Decode(&r_)
+	if err == io.EOF {
+		err = nil //ignore EOF errors caused by empty response body
+	}
+	if err != nil {
+		return nil, resp_, err
+	}
+	return &r_, resp_, nil
 }
 ```
 
