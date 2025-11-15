@@ -1,4 +1,4 @@
-//go:generate go run github.com/lopolopen/shoot/cmd/shoot new -getset -opt -type=RestConf
+//go:generate go run github.com/lopolopen/shoot/cmd/shoot new -getset -opt -short -type=RestConf
 package shoot
 
 import (

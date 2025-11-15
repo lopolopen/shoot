@@ -96,7 +96,7 @@ func (u *User) UnmarshalJSON(data []byte) error {
 func (u User) ShootNew() { /*noop*/ }
 
 // NewQueryBooksReq constructs a new instance of type QueryBooksReq
-func NewQueryBooksReq(name string, language string) *QueryBooksReq {
+func NewQueryBooksReq(name *string, language string) *QueryBooksReq {
 	return &QueryBooksReq{
 		name:     name,
 		language: language,
@@ -104,7 +104,7 @@ func NewQueryBooksReq(name string, language string) *QueryBooksReq {
 }
 
 // Name gets the value of field name
-func (q *QueryBooksReq) Name() string {
+func (q *QueryBooksReq) Name() *string {
 	return q.name
 }
 
@@ -114,7 +114,7 @@ func (q *QueryBooksReq) Language() string {
 }
 
 // SetName sets the value of field name
-func (q *QueryBooksReq) SetName(name_ string) {
+func (q *QueryBooksReq) SetName(name_ *string) {
 	q.name = name_
 }
 
@@ -124,19 +124,19 @@ func (q *QueryBooksReq) SetLanguage(language_ string) {
 }
 
 type _QueryBooksReq_marshal struct {
-	Name     string `json:"name"`
+	Name     *string `json:"name"`
 	Language string
 
 	PageSize int
 
-	PageIndex int `json:"PageIndex"`
+	PageIndex *int `json:"PageIndex"`
 }
 type _QueryBooksReq_unmarshal struct {
-	Name     string `json:"name"`
+	Name     *string `json:"name"`
 	Language string
 
 	PageSize  int
-	PageIndex int `json:"PageIndex"`
+	PageIndex *int `json:"PageIndex"`
 }
 
 // MarshalJSON serializes type QueryBooksReq to json bytes

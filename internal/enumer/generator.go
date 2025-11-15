@@ -195,7 +195,11 @@ func (g *Generator) FileName(typeName string) string {
 // parsePackage analyzes the single package constructed from the patterns and tags.
 func (g *Generator) parsePackage(patterns []string) {
 	cfg := &packages.Config{
-		Mode:  packages.LoadSyntax,
+		Mode: packages.NeedName |
+			packages.NeedFiles |
+			packages.NeedSyntax |
+			packages.NeedTypes |
+			packages.NeedTypesInfo,
 		Tests: false,
 	}
 	pkgs, err := packages.Load(cfg, patterns...)

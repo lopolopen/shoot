@@ -52,6 +52,14 @@ func (g *Generator) handleStruct(paramType ast.Expr, paramTypeName string, name 
 	if !ok {
 		return
 	}
+
+	if g.data.IsParamPtrMap[methodName] == nil {
+		g.data.IsParamPtrMap[methodName] = make(map[string]bool)
+	}
+	if g.data.AliasMap[methodName] == nil {
+		g.data.AliasMap[methodName] = make(map[string]string)
+	}
+
 	obj := named.Obj()
 	pkgPath := obj.Pkg().Path()
 	fullPath, err := getPkgDir(pkgPath)
@@ -71,11 +79,11 @@ func (g *Generator) handleStruct(paramType ast.Expr, paramTypeName string, name 
 			key = f.Name
 			value = fmt.Sprintf("%s.%s()", name.Name, transfer.ToPascalCase(f.Name))
 		}
+		if f.IsPtr {
+			g.data.IsParamPtrMap[methodName][value] = true
+		}
 		g.data.QueryParamsMap[methodName] = append(g.data.QueryParamsMap[methodName], value)
 
-		if g.data.AliasMap[methodName] == nil {
-			g.data.AliasMap[methodName] = make(map[string]string)
-		}
 		if f.Alias != "" {
 			g.data.AliasMap[methodName][value] = f.Alias
 		} else {

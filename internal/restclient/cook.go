@@ -22,9 +22,14 @@ func (g *Generator) cookClient(typeName string) {
 	g.data.AliasMap = make(map[string]map[string]string)
 	g.data.PathParamsMap = make(map[string][]string)
 	g.data.QueryParamsMap = make(map[string][]string)
+	g.data.IsParamPtrMap = make(map[string]map[string]bool)
 	g.data.BodyParamMap = make(map[string]string)
 	g.data.QueryDictMap = make(map[string]string)
-	g.data.ResultTypeMap = make(map[string]string)
+	g.data.ReturnResultMap = make(map[string]struct {
+		Type  string
+		IsPtr bool
+	})
+	g.data.ErrReturnMap = make(map[string]string)
 	g.data.CtxParamMap = make(map[string]string)
 	g.data.DefaultHeaders = map[string]map[string]string{
 		http.MethodGet: {
@@ -108,41 +113,61 @@ func (g *Generator) cookClient(typeName string) {
 					g.data.PathParamsMap[methodName] = realPathParams
 
 					//------------Params---------------
+					if g.data.IsParamPtrMap[methodName] == nil {
+						g.data.IsParamPtrMap[methodName] = make(map[string]bool)
+					}
 					if ftype.Params != nil {
 						for _, param := range ftype.Params.List {
 							for _, name := range param.Names {
 								g.handleExpr(param.Type, name, f.file, methodName, httpMethod)
-							}
-						}
-					}
-
-					hasErr := false
-					if ftype.Results != nil {
-						if len(ftype.Results.List) > 2 {
-							log.Fatalf("method %s must not return more than two values", methodName)
-						}
-
-						//------------Results---------------
-						for _, result := range ftype.Results.List {
-							if len(result.Names) == 0 {
-								typeName := getUnderlyingTypeName(result.Type)
-								if typeName == "error" {
-									hasErr = true
-									continue
+								if _, ok := param.Type.(*ast.StarExpr); ok {
+									g.data.IsParamPtrMap[methodName][name.Name] = true
 								}
-								g.data.ResultTypeMap[methodName] = typeName
-							} else {
-								//todo:
 							}
 						}
 					}
-					if !hasErr {
-						log.Fatalf("method %s must return an error", methodName)
+
+					//------------Results---------------
+					n := 0
+					if ftype.Results != nil {
+						n = len(ftype.Results.List)
 					}
+					if n < 2 {
+						log.Fatalf("method %s should at least return response and error", methodName)
+					}
+					if n > 3 {
+						log.Fatalf("method %s must not return more than three values", methodName)
+					}
+
+					second2last := exprToString(ftype.Results.List[n-2].Type)
+					if second2last != "*http.Response" {
+						log.Fatalf("the second to last return value of method %s must be a http response pointer", methodName)
+					}
+					last := exprToString(ftype.Results.List[n-1].Type)
+					if last != "error" {
+						log.Fatalf("the last return value of method %s must be an error", methodName)
+					}
+
+					if n == 3 {
+						r := ftype.Results.List[0]
+						if len(r.Names) > 0 {
+							log.Fatalf("method %s with named return list is not supported", methodName)
+						}
+
+						name, isPtr := getReturnTypeName(r.Type)
+						g.data.ReturnResultMap[methodName] = struct {
+							Type  string
+							IsPtr bool
+						}{
+							Type:  name,
+							IsPtr: isPtr,
+						}
+					}
+					g.data.ErrReturnMap[methodName] = strings.Repeat("nil, ", n-1) + "err"
+
 					//todo: check alias={a:alias}, a exists?
 				}
 			}
-
 			return false
 		})
 	}
@@ -253,19 +278,39 @@ func parseAlias(doc string) map[string]string {
 	return kvMap
 }
 
-func getUnderlyingTypeName(expr ast.Expr) string {
+// func getUnderlyingTypeName(expr ast.Expr) string {
+// 	switch t := expr.(type) {
+// 	case *ast.Ident:
+// 		return t.Name
+// 	case *ast.StarExpr:
+// 		// 指针类型，递归获取底层类型
+// 		return getUnderlyingTypeName(t.X)
+// 	case *ast.SelectorExpr:
+// 		// 处理像 pkg.Type 这样的类型
+// 		return getUnderlyingTypeName(t.X) + "." + t.Sel.Name
+// 	case *ast.ArrayType:
+// 		// 处理数组或切片类型
+// 		return "[]" + getUnderlyingTypeName(t.Elt)
+// 	default:
+// 		return fmt.Sprintf("%T", expr)
+// 	}
+// }
+
+func getReturnTypeName(expr ast.Expr) (string, bool) {
+	isPtr := false
+	var typeName string
 	switch t := expr.(type) {
-	case *ast.Ident:
-		return t.Name
 	case *ast.StarExpr:
-		// 指针类型，递归获取底层类型
-		return getUnderlyingTypeName(t.X)
-	case *ast.SelectorExpr:
-		// 处理像 context.Context 这样的类型
-		return getUnderlyingTypeName(t.X) + "." + t.Sel.Name
+		typeName = exprToString(t.X)
+		isPtr = true
+	case *ast.ArrayType:
+		typeName = exprToString(t)
+	case *ast.MapType:
+		typeName = exprToString(t)
 	default:
-		return fmt.Sprintf("%T", expr)
+		log.Fatalf("unsupported return type: %T", expr)
 	}
+	return typeName, isPtr
 }
 
 func isStructType(name string, file *ast.File) bool {
@@ -292,6 +337,7 @@ type fieldInfo struct {
 	Tag        string
 	Alias      string
 	IsExported bool
+	IsPtr      bool
 }
 
 func extractStructFields(pkgPath, typeName string) ([]fieldInfo, error) {
@@ -331,6 +377,7 @@ func extractStructFields(pkgPath, typeName string) ([]fieldInfo, error) {
 							rawTag = field.Tag.Value
 							alias = parseFieldAlias(rawTag)
 						}
+						_, ok := field.Type.(*ast.StarExpr)
 						for _, name := range field.Names {
 							fields = append(fields, fieldInfo{
 								Name:       name.Name,
@@ -338,6 +385,7 @@ func extractStructFields(pkgPath, typeName string) ([]fieldInfo, error) {
 								Tag:        rawTag,
 								Alias:      alias,
 								IsExported: name.IsExported(),
+								IsPtr:      ok,
 							})
 						}
 						// Handle anonymous fields (embedded structs)

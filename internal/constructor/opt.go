@@ -71,6 +71,7 @@ func (g *Generator) makeOpt(typeName string) {
 	})
 	g.data.DefaultList = defList
 	g.data.Option = true
+	g.data.Short = g.flags.short
 }
 
 func parseDefault(doc string) (string, bool) {

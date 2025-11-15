@@ -26,6 +26,7 @@ type Data struct {
 	ExportedList []string
 	EmbedList    []string
 	Self         bool
+	Short        bool
 }
 
 type Flags struct {
@@ -46,6 +47,7 @@ type Flags struct {
 	json     bool
 	opt      bool
 	separate bool
+	short    bool
 }
 
 // Value represents a declared constant.
