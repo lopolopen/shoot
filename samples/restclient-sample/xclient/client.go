@@ -3,6 +3,7 @@ package xclient
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"restclientsample/xclient/dto"
 
 	"github.com/lopolopen/shoot"
@@ -42,27 +43,27 @@ type Client interface {
 
 	//shoot: Get("/users/{id}")
 	//shoot: alias={userID:id},{pageSize:size},{pageIdx:page_idx}
-	GetUser(ctx context.Context, userID string, pageSize int, pageIdx *int) (*User, error)
+	GetUser(ctx context.Context, userID string, pageSize int, pageIdx *int) (*User, *http.Response, error)
 
 	//shoot: Post("/users")
-	QueryUsers(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error)
+	QueryUsers(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, *http.Response, error)
 
 	// //shoot: Post("/users2")
 	// //shoot: headers={Content-Type:application/x-www-form-urlencoded}                           //todo: support this
-	// QueryUsers2(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, error)
+	// QueryUsers2(ctx context.Context, req dto.QueryUsersReq) (*dto.QueryUsersResp, *http.Response, error)
 
 	//shoot: Get("/books")
-	QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.QueryBooksResp, error)
+	QueryBooks(ctx context.Context, req dto.QueryBooksReq) (*dto.QueryBooksResp, *http.Response, error)
 
 	//shoot: Get("/books")
-	QueryBooks0(ctx context.Context, req QueryBooksReq) (*dto.QueryBooksResp, error)
+	QueryBooks0(ctx context.Context, req QueryBooksReq) (*dto.QueryBooksResp, *http.Response, error)
 
 	//shoot: Get("/groups/{id}/books")
 	//shoot: alias={groupID:id}
-	QueryBooks2(ctx context.Context, groupID int, params map[string]interface{}) (*dto.Book, error) //todo: return array?
+	QueryBooks2(ctx context.Context, groupID int, params map[string]interface{}) (*dto.Book, *http.Response, error) //todo: return array?
 
 	//shoot: Put("/users/{id}")
-	UpdateUser(ctx context.Context, id int, user User) error
+	UpdateUser(ctx context.Context, id int, user User) (*http.Response, error)
 
 	NoComment(ctx context.Context)
 }

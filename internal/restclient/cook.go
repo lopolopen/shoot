@@ -15,12 +15,6 @@ import (
 	"strings"
 )
 
-var errReturnArr [3]string = [3]string{
-	0: "err",
-	1: "nil, err",
-	2: "nil, nil, err",
-}
-
 func (g *Generator) cookClient(typeName string) {
 	g.data.SigMap = make(map[string]string)
 	g.data.HTTPMethodMap = make(map[string]string)
@@ -28,12 +22,14 @@ func (g *Generator) cookClient(typeName string) {
 	g.data.AliasMap = make(map[string]map[string]string)
 	g.data.PathParamsMap = make(map[string][]string)
 	g.data.QueryParamsMap = make(map[string][]string)
-	g.data.IsPtrMap = make(map[string]map[string]bool)
+	g.data.IsParamPtrMap = make(map[string]map[string]bool)
 	g.data.BodyParamMap = make(map[string]string)
 	g.data.QueryDictMap = make(map[string]string)
-	g.data.ReturnListMap = make(map[string][]string)
+	g.data.ReturnResultMap = make(map[string]struct {
+		Type  string
+		IsPtr bool
+	})
 	g.data.ErrReturnMap = make(map[string]string)
-	g.data.ReturnsMap = make(map[string][]string)
 	g.data.CtxParamMap = make(map[string]string)
 	g.data.DefaultHeaders = map[string]map[string]string{
 		http.MethodGet: {
@@ -117,60 +113,61 @@ func (g *Generator) cookClient(typeName string) {
 					g.data.PathParamsMap[methodName] = realPathParams
 
 					//------------Params---------------
-					if g.data.IsPtrMap[methodName] == nil {
-						g.data.IsPtrMap[methodName] = make(map[string]bool)
+					if g.data.IsParamPtrMap[methodName] == nil {
+						g.data.IsParamPtrMap[methodName] = make(map[string]bool)
 					}
 					if ftype.Params != nil {
 						for _, param := range ftype.Params.List {
 							for _, name := range param.Names {
 								g.handleExpr(param.Type, name, f.file, methodName, httpMethod)
 								if _, ok := param.Type.(*ast.StarExpr); ok {
-									g.data.IsPtrMap[methodName][name.Name] = true
+									g.data.IsParamPtrMap[methodName][name.Name] = true
 								}
 							}
 						}
 					}
 
 					//------------Results---------------
-					if ftype.Results == nil || len(ftype.Results.List) == 0 {
-						log.Fatalf("method %s should at least return an error", methodName)
+					n := 0
+					if ftype.Results != nil {
+						n = len(ftype.Results.List)
 					}
-
-					if len(ftype.Results.List) > 3 {
+					if n < 2 {
+						log.Fatalf("method %s should at least return response and error", methodName)
+					}
+					if n > 3 {
 						log.Fatalf("method %s must not return more than three values", methodName)
 					}
 
-					n := len(ftype.Results.List)
+					second2last := exprToString(ftype.Results.List[n-2].Type)
+					if second2last != "*http.Response" {
+						log.Fatalf("the second to last return value of method %s must be a http response pointer", methodName)
+					}
 					last := exprToString(ftype.Results.List[n-1].Type)
 					if last != "error" {
 						log.Fatalf("the last return value of method %s must be an error", methodName)
 					}
 
-					var returnList []string
-					var returns []string
-					for i := 0; i < n-1; i++ {
-						r := ftype.Results.List[i]
+					if n == 3 {
+						r := ftype.Results.List[0]
 						if len(r.Names) > 0 {
 							log.Fatalf("method %s with named return list is not supported", methodName)
 						}
 
 						name, isPtr := getReturnTypeName(r.Type)
-						returnList = append(returnList, name)
-						if isPtr {
-							returns = append(returns, "&r_")
-						} else {
-							returns = append(returns, "r_")
+						g.data.ReturnResultMap[methodName] = struct {
+							Type  string
+							IsPtr bool
+						}{
+							Type:  name,
+							IsPtr: isPtr,
 						}
 					}
-
-					g.data.ReturnListMap[methodName] = returnList
-					g.data.ErrReturnMap[methodName] = errReturnArr[n-1]
-					g.data.ReturnsMap[methodName] = returns
+					g.data.ErrReturnMap[methodName] = strings.Repeat("nil, ", n-1) + "err"
 
 					//todo: check alias={a:alias}, a exists?
 				}
 			}
-
 			return false
 		})
 	}

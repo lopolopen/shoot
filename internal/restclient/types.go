@@ -17,10 +17,12 @@ type Data struct {
 	AliasMap        map[string]map[string]string
 	PathParamsMap   map[string][]string
 	QueryParamsMap  map[string][]string
-	IsPtrMap        map[string]map[string]bool
-	ReturnListMap   map[string][]string // method return list
+	IsParamPtrMap   map[string]map[string]bool
+	ReturnResultMap map[string]struct {
+		Type  string
+		IsPtr bool
+	} // method may return one result or not
 	ErrReturnMap    map[string]string
-	ReturnsMap      map[string][]string
 	BodyParamMap    map[string]string
 	QueryDictMap    map[string]string
 	DefaultHeaders  map[string]map[string]string

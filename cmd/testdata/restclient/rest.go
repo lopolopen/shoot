@@ -2,6 +2,7 @@ package restclient
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/lopolopen/shoot"
 )
@@ -24,27 +25,27 @@ type Client interface {
 
 	//shoot: Get("/users/{id}")
 	//shoot: alias={userID:id}
-	GetUser(ctx context.Context, userID string) (*User, error)
+	GetUser(ctx context.Context, userID string) (*User, *http.Response, error)
 
 	//shoot: Get("/users")
 	//shoot: alias={pageSize:size},{pageIdx:page_idx}
-	QueryUsers(ctx context.Context, key string, pageSize, pageIdx int) (*QueryUsersResp, error)
+	QueryUsers(ctx context.Context, key string, pageSize, pageIdx int) (*QueryUsersResp, *http.Response, error)
 
 	//shoot: Get("/users")
-	QueryUsers2(ctx context.Context, params map[string]string) (*QueryUsersResp, error)
+	QueryUsers2(ctx context.Context, params map[string]string) (*QueryUsersResp, *http.Response, error)
 
 	//shoot: Get("/users")
-	QueryUsers3(ctx context.Context, params *map[string]string) (*QueryUsersResp, error)
+	QueryUsers3(ctx context.Context, params *map[string]string) (*QueryUsersResp, *http.Response, error)
 
 	//shoot: Get("/users")
-	QueryUsers4(ctx context.Context, req QueryUsersReq) (*QueryUsersResp, error)
+	QueryUsers4(ctx context.Context, req QueryUsersReq) (*QueryUsersResp, *http.Response, error)
 
 	//shoot: Get("/users")
-	QueryUsers5(ctx context.Context, req *QueryUsersReq) (*QueryUsersResp, error)
+	QueryUsers5(ctx context.Context, req *QueryUsersReq) (*QueryUsersResp, *http.Response, error)
 
 	//shoot: Get("/users")
-	QueryUsers6(ctx context.Context, req *QueryUsersReq) ([]User, error)
+	QueryUsers6(ctx context.Context, req *QueryUsersReq) ([]User, *http.Response, error)
 
 	//shoot: Put("/users/{id}")
-	UpdateUser(ctx context.Context, id int, user User) error
+	UpdateUser(ctx context.Context, id int, user User) (*http.Response, error)
 }
