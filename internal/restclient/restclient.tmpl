@@ -13,9 +13,12 @@ type {{camelCase .TypeName}} struct{
 
 {{range $item := .MethodList}}
 func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
-    {{- $retlist := index $.ReturnListMap . -}}
     {{- $errret := index $.ErrReturnMap . -}}
-    {{- $rets := index $.ReturnsMap . -}}
+    {{- $result := index $.ReturnResultMap . -}}
+    {{- $ptr := "" -}}
+    {{- if $result.IsPtr -}}
+    {{- $ptr = "&" -}}
+    {{- end -}}
     
     path_ := "{{index $.PathMap .}}"{{"\n"}}
     {{- $pms := index $.PathParamsMap . -}}
@@ -56,7 +59,7 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     {{- if not (in $httpmethod $.BodyHTTPMethods) -}}
     {{- $qs := index $.QueryParamsMap $item -}}
     {{- $qd := index $.QueryDictMap $item -}}
-    {{- $isPtrMap := index $.IsPtrMap $item -}}
+    {{- $isPtrMap := index $.IsParamPtrMap $item -}}
     {{- if or $qs $qd -}}
     query_ := req_.URL.Query(){{"\n"}}
     {{- end -}}
@@ -94,38 +97,36 @@ func (c *{{camelCase $.TypeName}}) {{index $.SigMap .}} {
     }
     defer resp_.Body.Close()
 
-    body_, _ := io.ReadAll(resp_.Body)
+    switch {
+        case resp_.StatusCode >= 500:
+            body_, _ := io.ReadAll(resp_.Body)
+            err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+        case resp_.StatusCode >= 400:
+            body_, _ := io.ReadAll(resp_.Body)
+            err = fmt.Errorf("client error %d: %s", resp_.StatusCode, string(body_))
+        case resp_.StatusCode >= 300 || resp_.StatusCode < 200:
+            err = fmt.Errorf("not supported error %d",resp_.StatusCode)
+    }{{- "\n" -}}
 
-    if resp_.StatusCode >= 500 {
-        err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
-        return {{$errret}}
-    }
-
-    {{- if eq (len $retlist) 0 -}}{{"\n"}}
-    return nil
-    {{- else if eq (len $retlist) 1 -}}{{"\n"}}
-    var r_ {{index $retlist 0}}
-    err = json.Unmarshal(body_, &r_)
+    {{- if not $result.Type -}}
     if err != nil {
-		return {{$errret}}
-	}
-    return {{index $rets 0}}, nil
-    {{else}}
-    if resp_.StatusCode < 300 {
-        var r_ {{index $retlist 0}}
-        err = json.Unmarshal(body_, &r_)
-        if err != nil {
-            return {{$errret}}
-        }
-        return {{index $rets 0}}, nil, nil
-    } else {
-        var r_ {{index $retlist 1}}
-        err = json.Unmarshal(body_, &r_)
-        if err != nil {
-            return {{$errret}}
-        }
-        return nil, {{index $rets 1}}, nil
+        return resp_, err
     }
+    return resp_, nil
+    {{- else -}}
+    if err != nil {
+        return nil, resp_, err
+    }
+
+    var r_ {{$result.Type}}
+    err = json.NewDecoder(resp_.Body).Decode(&r_)
+    if err == io.EOF {
+        err = nil //ignore EOF errors caused by empty response body
+    }
+    if err != nil {
+        return nil, resp_, err
+    }
+    return {{$ptr}}r_, resp_, nil
     {{- end -}}
 }
 {{end}}
