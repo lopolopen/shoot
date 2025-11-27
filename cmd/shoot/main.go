@@ -14,7 +14,7 @@ import (
 )
 
 var subCmdMap = map[string]string{
-	constructor.SubCmd: "[-new] [-opt] [-getset] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+	constructor.SubCmd: "[-opt] [-getset] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
 	enumer.SubCmd:      "[-json] [-text] -[bit] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-v]",
 	restclient.SubCmd:  "[-type=<Type> | -file=<GoFile>] [dir] [-v]",
 }
