@@ -8,12 +8,10 @@ BETA VERSION. USE WITH CAUTION!
 
 ```zsh
 Usage: shoot <subcommand> [options]
-
 These are all the sub commands supported as of now:
-
-new [-new] [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]
-
+new [-opt] [-getset] [-json][-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]
 enum [-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]
+rest [-type=<Type> | -file=<GoFile>] [dir] [-v]
 ```
 
 ## using go1.24+ (SUGGESTED)
@@ -30,11 +28,11 @@ go get -tool github.com/lopolopen/shoot/cmd/shoot@latest
 ```go
 //go:generate go tool shoot new -getset -json -type=YourType
 
-//go:generate go tool shoot new -getset -json -file $GOFILE
+//go:generate go tool shoot new -getset -json -file=$GOFILE
 
 //go:generate go tool shoot enum -json -type=YourEnum
 
-//go:generate go tool shoot rest -type=Client
+//go:generate go tool shoot rest -type=YourClient
 ```
 
 ```zsh
@@ -53,11 +51,11 @@ go get github.com/lopolopen/shoot@latest	# manual installation is necessary for 
 ```go
 //go:generate shoot new -getset -json -type=YourType
 
-//go:generate shoot new -getset -json -file $GOFILE
+//go:generate shoot new -getset -json -file=$GOFILE
 
 //go:generate shoot enum -json -type=YourEnum
 
-//go:generate shoot rest -type=Client
+//go:generate shoot rest -type=YourClient
 ```
 
 ## generated file sample 1:
