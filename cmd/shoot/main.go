@@ -15,8 +15,8 @@ import (
 
 var subCmdMap = map[string]string{
 	constructor.SubCmd: "[-opt] [-getset] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
-	enumer.SubCmd:      "[-json] [-text] -[bit] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-v]",
-	restclient.SubCmd:  "[-type=<Type> | -file=<GoFile>] [dir] [-v]",
+	enumer.SubCmd:      "[-json] [-text] -[bit] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+	restclient.SubCmd:  "[-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
 }
 
 func main() {
