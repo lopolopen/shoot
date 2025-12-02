@@ -6,6 +6,18 @@ import (
 	"github.com/lopolopen/shoot/internal/transfer"
 )
 
+type Data interface {
+	SetCmd(cmd string)
+
+	SetTypeName(typeName string)
+
+	SetPackageName(pkgName string)
+
+	RegisterTransfer(key string, transfer any)
+
+	Transfers() template.FuncMap
+}
+
 type BaseData struct {
 	Cmd         string
 	PackageName string
@@ -13,11 +25,17 @@ type BaseData struct {
 	transfers   template.FuncMap
 }
 
-func (d *BaseData) PreRegister() {
-	d.Register("firstLower", transfer.FirstLower)
-	d.Register("camelCase", transfer.ToCamelCase)
-	d.Register("pascalCase", transfer.ToPascalCase)
-	d.Register("in", func(s string, list []string) bool {
+func NewBaseData() *BaseData {
+	d := &BaseData{}
+	d.preRegister()
+	return d
+}
+
+func (d *BaseData) preRegister() {
+	d.RegisterTransfer("firstLower", transfer.FirstLower)
+	d.RegisterTransfer("camelCase", transfer.ToCamelCase)
+	d.RegisterTransfer("pascalCase", transfer.ToPascalCase)
+	d.RegisterTransfer("in", func(s string, list []string) bool {
 		for _, x := range list {
 			if s == x {
 				return true
@@ -27,7 +45,19 @@ func (d *BaseData) PreRegister() {
 	})
 }
 
-func (d *BaseData) Register(key string, transfer any) {
+func (d *BaseData) SetCmd(cmd string) {
+	d.Cmd = cmd
+}
+
+func (d *BaseData) SetTypeName(typeName string) {
+	d.TypeName = typeName
+}
+
+func (d *BaseData) SetPackageName(pkgName string) {
+	d.PackageName = pkgName
+}
+
+func (d *BaseData) RegisterTransfer(key string, transfer any) {
 	if d.transfers == nil {
 		d.transfers = make(template.FuncMap)
 	}

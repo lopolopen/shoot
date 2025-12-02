@@ -75,3 +75,6 @@ func (c *Conf) SetHost(host_ []string) {
 func (c *Conf) SetPort(port_ int) {
 	c.port = port_
 }
+
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (c Conf) ShootNew() { /*noop*/ }

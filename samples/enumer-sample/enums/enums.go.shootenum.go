@@ -2,12 +2,9 @@
 
 package enums
 
-import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/lopolopen/shoot"
-)
+import "encoding/json"
+import "fmt"
+import "github.com/lopolopen/shoot"
 
 func _() {
 	var x [1]struct{}
@@ -20,15 +17,12 @@ func _() {
 const _light_all = LightRed | LightYello | LightGreen | 0
 
 var _light_values = []Light{LightRed, LightYello, LightGreen}
-
 var _light_strings = []string{"Red", "Yello", "Green"}
-
 var _light_string_map = map[Light]string{
 	LightRed:   "Red",
 	LightYello: "Yello",
 	LightGreen: "Green",
 }
-
 var _light_value_map = map[string]Light{
 	"Red":   LightRed,
 	"Yello": LightYello,
@@ -47,19 +41,15 @@ func (l Light) String() string {
 
 	return fmt.Sprintf("%d", l)
 }
-
 func (l Light) Values() []Light {
 	return _light_values
 }
-
 func (l Light) Strings() []string {
 	return _light_strings
 }
-
 func (l Light) ValueMap() map[string]Light {
 	return _light_value_map
 }
-
 func (l Light) StringMap() map[Light]string {
 	return _light_string_map
 }
@@ -101,5 +91,5 @@ func (l *Light) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// ShootEnum
+// ShootEnum exists solely to fulfill the EnumShooter interface contract
 func (l Light) ShootEnum() { /*noop*/ }

@@ -2,12 +2,9 @@
 
 package xclient
 
-import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/lopolopen/shoot"
-)
+import "encoding/json"
+import "fmt"
+import "github.com/lopolopen/shoot"
 
 func _() {
 	var x [1]struct{}
@@ -20,15 +17,12 @@ func _() {
 const _gender_all = Unknown | Male | Femal | 0
 
 var _gender_values = []Gender{Unknown, Male, Femal}
-
 var _gender_strings = []string{"Unknown", "Male", "Femal"}
-
 var _gender_string_map = map[Gender]string{
 	Unknown: "Unknown",
 	Male:    "Male",
 	Femal:   "Femal",
 }
-
 var _gender_value_map = map[string]Gender{
 	"Unknown": Unknown,
 	"Male":    Male,
@@ -47,19 +41,15 @@ func (g Gender) String() string {
 
 	return fmt.Sprintf("%d", g)
 }
-
 func (g Gender) Values() []Gender {
 	return _gender_values
 }
-
 func (g Gender) Strings() []string {
 	return _gender_strings
 }
-
 func (g Gender) ValueMap() map[string]Gender {
 	return _gender_value_map
 }
-
 func (g Gender) StringMap() map[Gender]string {
 	return _gender_string_map
 }

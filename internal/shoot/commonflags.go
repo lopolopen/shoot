@@ -1,6 +1,6 @@
 package shoot
 
-type BaseFlags struct {
+type CommonFlags struct {
 	Dir       string
 	Verbose   bool
 	Raw       bool
