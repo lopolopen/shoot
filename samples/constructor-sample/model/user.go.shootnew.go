@@ -100,6 +100,9 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (u User) ShootNew() { /*noop*/ }
+
 // NewBook constructs a new instance of type Book
 func NewBook(name string) *Book {
 	return &Book{
@@ -178,3 +181,6 @@ func (b *Book) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
+
+// ShootNew exists solely to fulfill the NewShooter interface contract
+func (b Book) ShootNew() { /*noop*/ }
