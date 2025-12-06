@@ -127,11 +127,11 @@ func (g *Generator) makeStr(typeName string) {
 
 	g.data.NameList = nameList
 
-	g.data.RegisterTransfer("valueof", func(key string) interface{} {
+	g.RegisterTransfer("valueof", func(key string) interface{} {
 		return valueMap[key]
 	})
 
-	g.data.RegisterTransfer("strof", func(key string) interface{} {
+	g.RegisterTransfer("strof", func(key string) interface{} {
 		return strMap[key]
 	})
 }

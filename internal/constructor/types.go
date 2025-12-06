@@ -4,8 +4,8 @@ import (
 	"github.com/lopolopen/shoot/internal/shoot"
 )
 
-type Data struct {
-	*shoot.BaseData
+type TmplData struct {
+	*shoot.TmplDataBase
 	// GoFile  string
 	Imports string
 	//All = Exported + Unexported
@@ -25,9 +25,9 @@ type Data struct {
 	Short        bool
 }
 
-func NewData() *Data {
-	return &Data{
-		BaseData: shoot.NewBaseData(),
+func NewTmplData() *TmplData {
+	return &TmplData{
+		TmplDataBase: shoot.NewTmplDataBase(),
 	}
 }
 

@@ -57,7 +57,8 @@ func main() {
 	}
 
 	g.ParseFlags()
-	srcMap := g.Generate()
+	g.ParsePackage(g)
+	srcMap := g.Generate(g)
 	var fileNames []string
 	for fname, src := range srcMap {
 		notedownSrc(fname, src)

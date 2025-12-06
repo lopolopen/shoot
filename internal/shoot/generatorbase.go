@@ -11,28 +11,67 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/lopolopen/shoot/internal/transfer"
 	"golang.org/x/tools/go/packages"
 )
 
-type GenBase struct {
+type GeneratorBase struct {
 	commonFlags *CommonFlags
 	pkg         *Package
-	worker      GenWorker
+	subCmd      string
+	tmplTxt     string
+	tmp         *template.Template
+	transfers   template.FuncMap
 }
 
-func (g *GenBase) SetWorker(worker GenWorker) {
-	g.worker = worker
+func NewGeneratorBase(subCmd string, tmplTxt string) *GeneratorBase {
+	g := &GeneratorBase{
+		subCmd:  subCmd,
+		tmplTxt: tmplTxt,
+	}
+	g.preRegister()
+	return g
 }
 
-func (g *GenBase) CommonFlags() *CommonFlags {
-	return g.commonFlags
+func (g *GeneratorBase) tmpl() *template.Template {
+	if g.tmp == nil {
+		tmp, err := template.New(g.subCmd).Funcs(g.transfers).Parse(g.tmplTxt)
+		if err != nil {
+			log.Fatalf("parsing template: %s", err)
+		}
+		g.tmp = tmp
+	}
+	return g.tmp
 }
 
-func (g *GenBase) Package() *Package {
+func (g *GeneratorBase) Package() *Package {
 	return g.pkg
 }
 
-func (g *GenBase) ParseCommonFlags(sub *flag.FlagSet) {
+func (d *GeneratorBase) preRegister() {
+	d.RegisterTransfer("firstLower", transfer.FirstLower)
+	d.RegisterTransfer("camelCase", transfer.ToCamelCase)
+	d.RegisterTransfer("pascalCase", transfer.ToPascalCase)
+	d.RegisterTransfer("in", func(s string, list []string) bool {
+		for _, x := range list {
+			if s == x {
+				return true
+			}
+		}
+		return false
+	})
+}
+
+func (d *GeneratorBase) RegisterTransfer(key string, transfer any) {
+	if d.transfers == nil {
+		d.transfers = make(template.FuncMap)
+	}
+
+	d.transfers[key] = transfer
+	d.tmp = nil
+}
+
+func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 	typeNames := sub.String("type", "", "comma-separated list of type names")
 	fileName := sub.String("file", "", "the targe go file to generate, typical value: $GOFILE")
 	separate := sub.Bool("separate", false, "each type has its own go file")
@@ -80,13 +119,13 @@ func (g *GenBase) ParseCommonFlags(sub *flag.FlagSet) {
 	}
 }
 
-func (g *GenBase) fileName(name string, pkgScope bool) string {
+func (g *GeneratorBase) fileName(name string, pkgScope bool) string {
 	if pkgScope {
-		return fmt.Sprintf("%s%s.%s.go", Cmd, g.worker.SubCmd(), name)
+		return fmt.Sprintf("%s%s.%s.go", Cmd, g.subCmd, name)
 	}
 	gofile := g.commonFlags.FileName
 	if name == "" {
-		return fmt.Sprintf("%s.%s%s.go", gofile, Cmd, g.worker.SubCmd())
+		return fmt.Sprintf("%s.%s%s.go", gofile, Cmd, g.subCmd)
 	}
 	if !ast.IsExported(name) {
 		name = "_" + name
@@ -95,7 +134,7 @@ func (g *GenBase) fileName(name string, pkgScope bool) string {
 }
 
 // parsePackage analyzes the single package constructed from the patterns and tags.
-func (g *GenBase) parsePackage(patterns []string) {
+func (g *GeneratorBase) parsePackage(patterns []string) {
 	cfg := &packages.Config{
 		Mode: packages.NeedName |
 			packages.NeedFiles |
@@ -113,11 +152,10 @@ func (g *GenBase) parsePackage(patterns []string) {
 		fmt.Println(pkgs)
 	}
 	g.addPackage(pkgs[0])
-
 }
 
 // addPackage adds a type checked Package and its syntax files to the generator.
-func (g *GenBase) addPackage(pkg *packages.Package) {
+func (g *GeneratorBase) addPackage(pkg *packages.Package) {
 	g.pkg = &Package{
 		pkg:   pkg,
 		name:  pkg.Name,
@@ -143,12 +181,11 @@ func getGoFile(pkg *packages.Package, typeName string) string {
 	return ""
 }
 
-func (g *GenBase) Generate() map[string][]byte {
+func (g *GeneratorBase) ParsePackage(typesParser TypesFilter) {
 	pat := g.commonFlags.Dir
 	if g.commonFlags.FileName != "" {
 		pat = filepath.Join(pat, g.commonFlags.FileName)
 	}
-
 	g.parsePackage([]string{pat})
 
 	typeNames := g.commonFlags.TypeNames
@@ -162,16 +199,22 @@ func (g *GenBase) Generate() map[string][]byte {
 			}
 		}
 	} else {
-		typeNames = g.worker.TypeNames()
+		g.commonFlags.TypeNames = typesParser.FilterTypes()
 	}
+}
 
+func (g *GeneratorBase) Generate(dataMaker DataMaker) map[string][]byte {
+	if g.pkg == nil {
+		log.Fatalln("pkg is nil, may forget to call ParsePackage")
+	}
 	srcMap := make(map[string][]byte)
 	var srcList [][]byte
-	for _, typName := range typeNames {
-		if ok := g.worker.Do(typName); !ok {
+	for _, typName := range g.commonFlags.TypeNames {
+		data := dataMaker.MakeData(typName)
+		if data == nil {
 			continue
 		}
-		src := g.generate(typName)
+		src := g.generateOne(data)
 		if len(src) == 0 {
 			continue
 		}
@@ -194,26 +237,14 @@ func (g *GenBase) Generate() map[string][]byte {
 	return srcMap
 }
 
-func (g *GenBase) generate(typeName string) []byte {
-	data := g.worker.Data()
-	cflags := g.CommonFlags()
-	pkg := g.Package()
-
-	var buff bytes.Buffer
-	tmpl, err := template.New(g.worker.SubCmd()).Funcs(data.Transfers()).Parse(g.worker.TmplTxt())
-	if err != nil {
-		log.Fatalf("parsing template: %s", err)
-	}
-
-	data.SetCmd(strings.Join(append([]string{Cmd}, flag.Args()...), " "))
-	data.SetTypeName(typeName)
-	data.SetPackageName(pkg.Name())
-
+func (g *GeneratorBase) generateOne(data any) []byte {
+	cflags := g.commonFlags
 	if cflags.Verbose {
 		log.Printf("[debug]:\n%+v", data)
 	}
 
-	err = tmpl.Execute(&buff, data)
+	var buff bytes.Buffer
+	err := g.tmpl().Execute(&buff, data)
 	if err != nil {
 		log.Fatalf("executing template: %s", err)
 	}

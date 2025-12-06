@@ -4,8 +4,8 @@ import (
 	"github.com/lopolopen/shoot/internal/shoot"
 )
 
-type Data struct {
-	shoot.BaseData
+type TmplData struct {
+	shoot.TmplDataBase
 	MethodList      []string
 	SigMap          map[string]string
 	HTTPMethodMap   map[string]string
@@ -26,9 +26,9 @@ type Data struct {
 	BodyHTTPMethods []string
 }
 
-func NewData() *Data {
-	return &Data{
-		BaseData: *shoot.NewBaseData(),
+func NewTmplData() *TmplData {
+	return &TmplData{
+		TmplDataBase: *shoot.NewTmplDataBase(),
 	}
 }
 

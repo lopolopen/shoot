@@ -147,12 +147,12 @@ func TestShootRest_Golden(t *testing.T) {
 	}
 }
 
-func generate(test Golden, gen shoot.Generator) map[string][]byte {
+func generate(test Golden, g shoot.Generator) map[string][]byte {
 	os.Args = strings.Split(test.cmd, " ")
 	flag.Parse()
 
-	gen.ParseFlags()
-
-	srcMap := gen.Generate()
+	g.ParseFlags()
+	g.ParsePackage(g)
+	srcMap := g.Generate(g)
 	return srcMap
 }

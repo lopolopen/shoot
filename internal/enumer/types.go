@@ -4,17 +4,17 @@ import (
 	"github.com/lopolopen/shoot/internal/shoot"
 )
 
-type Data struct {
-	shoot.BaseData
+type TmplData struct {
+	shoot.TmplDataBase
 	NameList []string
 	Bitwise  bool
 	Json     bool
 	Text     bool
 }
 
-func NewData() *Data {
-	return &Data{
-		BaseData: *shoot.NewBaseData(),
+func NewTmplData() *TmplData {
+	return &TmplData{
+		TmplDataBase: *shoot.NewTmplDataBase(),
 	}
 }
 
