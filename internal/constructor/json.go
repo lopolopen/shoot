@@ -8,7 +8,7 @@ import (
 )
 
 func (g *Generator) makeJson(typeName string) {
-	g.data.RegisterTransfer("jsontagof", transfer.ID)
+	g.RegisterTransfer("jsontagof", transfer.ID)
 
 	if !g.flags.json {
 		return
@@ -54,7 +54,7 @@ func (g *Generator) makeJson(typeName string) {
 		})
 	}
 	g.data.ExportedList = exportedList
-	g.data.RegisterTransfer("jsontagof", func(key string) string {
+	g.RegisterTransfer("jsontagof", func(key string) string {
 		return tagMap[key]
 	})
 	g.data.Json = true

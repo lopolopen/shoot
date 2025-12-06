@@ -11,7 +11,7 @@ import (
 )
 
 func (g *Generator) makeOpt(typeName string) {
-	g.data.RegisterTransfer("defaultof", transfer.ID)
+	g.RegisterTransfer("defaultof", transfer.ID)
 
 	var defList []string
 	defMap := make(map[string]string)
@@ -66,7 +66,7 @@ func (g *Generator) makeOpt(typeName string) {
 		return
 	}
 
-	g.data.RegisterTransfer("defaultof", func(key string) string {
+	g.RegisterTransfer("defaultof", func(key string) string {
 		return defMap[key]
 	})
 	g.data.DefaultList = defList

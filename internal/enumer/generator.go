@@ -7,6 +7,7 @@ import (
 	"go/token"
 	"go/types"
 	"log"
+	"strings"
 
 	"github.com/lopolopen/shoot/internal/shoot"
 )
@@ -18,30 +19,15 @@ var tmplTxt string
 
 // Generator holds the state of the analysis.
 type Generator struct {
-	*shoot.GenBase
+	*shoot.GeneratorBase
 	flags *Flags
-	data  *Data
+	data  *TmplData
 }
 
 func New() *Generator {
 	g := &Generator{
-		GenBase: &shoot.GenBase{},
-		data:    NewData(),
-	}
-	g.SetWorker(g)
+		GeneratorBase: shoot.NewGeneratorBase(SubCmd, tmplTxt)}
 	return g
-}
-
-func (g *Generator) SubCmd() string {
-	return SubCmd
-}
-
-func (g *Generator) TmplTxt() string {
-	return tmplTxt
-}
-
-func (g *Generator) Data() shoot.Data {
-	return g.data
 }
 
 func (g *Generator) ParseFlags() {
@@ -60,19 +46,24 @@ func (g *Generator) ParseFlags() {
 	}
 }
 
-func (g *Generator) Do(typeName string) bool {
+func (g *Generator) MakeData(typeName string) any {
+	g.data = NewTmplData()
 	g.makeStr(typeName)
 	g.makeBitwize()
 	g.makeJson()
 	g.makeText()
 
 	if len(g.data.NameList) == 0 {
-		return false
+		return nil
 	}
-	return true
+
+	g.data.SetTypeName(typeName)
+	g.data.SetPackageName(g.Package().Name())
+	g.data.SetCmd(strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "))
+	return g.data
 }
 
-func (g *Generator) TypeNames() []string {
+func (g *Generator) FilterTypes() []string {
 	var typeNames []string
 	pkg := g.Package()
 	for _, f := range pkg.Files() {

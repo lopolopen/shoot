@@ -13,8 +13,8 @@ import (
 )
 
 func (g *Generator) makeNew(typeName string) {
-	g.data.RegisterTransfer("typeof", transfer.ID)
-	g.data.RegisterTransfer("xof", transfer.ID)
+	g.RegisterTransfer("typeof", transfer.ID)
+	g.RegisterTransfer("xof", transfer.ID)
 
 	var imports string
 	var allList []string
@@ -102,10 +102,10 @@ func (g *Generator) makeNew(typeName string) {
 	}
 	g.data.EmbedList = embedList
 
-	g.data.RegisterTransfer("typeof", func(key string) string {
+	g.RegisterTransfer("typeof", func(key string) string {
 		return typeMap[key]
 	})
-	g.data.RegisterTransfer("xof", func(key string) string {
+	g.RegisterTransfer("xof", func(key string) string {
 		return xMap[key]
 	})
 }
