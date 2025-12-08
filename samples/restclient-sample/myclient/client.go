@@ -2,6 +2,7 @@ package myclient
 
 import (
 	"context"
+	"net/http"
 
 	"github.com/lopolopen/shoot"
 )
@@ -19,8 +20,8 @@ type Client interface {
 	shoot.RestClient[Client]
 
 	//shoot: Get("/get")
-	Get(ctx context.Context, key string) (*KV, error)
+	Get(ctx context.Context, key string) (*KV, *http.Response, error)
 
 	//shoot: Post("/set")
-	Set(ctx context.Context, kv *KV) error
+	Set(ctx context.Context, kv *KV) (*http.Response, error)
 }

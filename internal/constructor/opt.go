@@ -11,13 +11,13 @@ import (
 )
 
 func (g *Generator) makeOpt(typeName string) {
-	g.data.Register("defaultof", transfer.ID)
+	g.RegisterTransfer("defaultof", transfer.ID)
 
 	var defList []string
 	defMap := make(map[string]string)
 
-	for _, f := range g.pkg.files {
-		ast.Inspect(f.file, func(n ast.Node) bool {
+	for _, f := range g.Package().Files() {
+		ast.Inspect(f.File(), func(n ast.Node) bool {
 			ts, ok := n.(*ast.TypeSpec)
 			if !ok {
 				return true
@@ -66,7 +66,7 @@ func (g *Generator) makeOpt(typeName string) {
 		return
 	}
 
-	g.data.Register("defaultof", func(key string) string {
+	g.RegisterTransfer("defaultof", func(key string) string {
 		return defMap[key]
 	})
 	g.data.DefaultList = defList

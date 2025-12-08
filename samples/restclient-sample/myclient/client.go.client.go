@@ -20,17 +20,17 @@ type client struct {
 	conf   *shoot.RestConf
 }
 
-func (c *client) Get(ctx context.Context, key string) (*KV, error) {
+func (c *client) Get(ctx context.Context, key string) (*KV, *http.Response, error) {
 	path_ := "/get"
 
 	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	req_, err := http.NewRequestWithContext(ctx, "GET", url_, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	query_ := req_.URL.Query()
@@ -42,38 +42,51 @@ func (c *client) Get(ctx context.Context, key string) (*KV, error) {
 
 	resp_, err := c.client.Do(req_)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer resp_.Body.Close()
 
-	body_, err := io.ReadAll(resp_.Body)
-	if err != nil {
-		return nil, err
+	switch {
+	case resp_.StatusCode >= 500:
+		body_, _ := io.ReadAll(resp_.Body)
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+	case resp_.StatusCode >= 400:
+		body_, _ := io.ReadAll(resp_.Body)
+		err = fmt.Errorf("client error %d: %s", resp_.StatusCode, string(body_))
+	case resp_.StatusCode >= 300 || resp_.StatusCode < 200:
+		err = fmt.Errorf("not supported error %d", resp_.StatusCode)
 	}
-	var result_ KV
-	err = json.Unmarshal(body_, &result_)
 	if err != nil {
-		return nil, err
+		return nil, resp_, err
 	}
-	return &result_, nil
+
+	var r_ KV
+	err = json.NewDecoder(resp_.Body).Decode(&r_)
+	if err == io.EOF {
+		err = nil //ignore EOF errors caused by empty response body
+	}
+	if err != nil {
+		return nil, resp_, err
+	}
+	return &r_, resp_, nil
 }
 
-func (c *client) Set(ctx context.Context, kv *KV) error {
+func (c *client) Set(ctx context.Context, kv *KV) (*http.Response, error) {
 	path_ := "/set"
 
 	url_, err := url.JoinPath(c.conf.BaseURL(), path_)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	bodyJson_, err := json.Marshal(kv)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req_, err := http.NewRequestWithContext(ctx, "POST", url_, bytes.NewReader(bodyJson_))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	req_.Header.Add("Accept", "application/json")
@@ -82,11 +95,24 @@ func (c *client) Set(ctx context.Context, kv *KV) error {
 
 	resp_, err := c.client.Do(req_)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer resp_.Body.Close()
 
-	return nil
+	switch {
+	case resp_.StatusCode >= 500:
+		body_, _ := io.ReadAll(resp_.Body)
+		err = fmt.Errorf("server error %d: %s", resp_.StatusCode, string(body_))
+	case resp_.StatusCode >= 400:
+		body_, _ := io.ReadAll(resp_.Body)
+		err = fmt.Errorf("client error %d: %s", resp_.StatusCode, string(body_))
+	case resp_.StatusCode >= 300 || resp_.StatusCode < 200:
+		err = fmt.Errorf("not supported error %d", resp_.StatusCode)
+	}
+	if err != nil {
+		return resp_, err
+	}
+	return resp_, nil
 }
 
 // ConfigHTTPClient allows customization of the underlying http.Client.
