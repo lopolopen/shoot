@@ -22,25 +22,25 @@ var goldens_new = []Golden{
 	// {
 	// 	cmd: "shoot new -getset -type=User ./notexists -v",
 	// 	names: []string{
-	// 		"new_getset.go_user.go",
+	// 		"new_getset.go.user.go",
 	// 	},
 	// },
 	{
 		cmd: "shoot new -getset -type=User ./testdata/constructor",
 		names: []string{
-			"new_getset.go_user.go",
+			"new_getset.go.user.go",
 		},
 	},
 	{
 		cmd: "shoot new -opt -type=Conf ./testdata/constructor",
 		names: []string{
-			"new_opt.go_conf.go",
+			"new_opt.go.conf.go",
 		},
 	},
 	{
 		cmd: "shoot new -file=new_file.go ./testdata/constructor",
 		names: []string{
-			"new_file.go_shootnew.go",
+			"new_file.go.shootnew.go",
 		},
 	},
 }
@@ -53,13 +53,13 @@ var goldens_enum = []Golden{
 	{
 		cmd: "shoot enum -bit -type=FormatStyle ./testdata/enumer",
 		names: []string{
-			"enum_bit.go_formatstyle.go",
+			"enum_bit.go.formatstyle.go",
 		},
 	},
 	{
 		cmd: "shoot enum -json -type=Color ./testdata/enumer",
 		names: []string{
-			"enum_json.go_color.go",
+			"enum_json.go.color.go",
 		},
 	},
 }
@@ -68,7 +68,7 @@ var goldens_rest = []Golden{
 	{
 		cmd: "shoot rest -type=Client ./testdata/restclient",
 		names: []string{
-			"rest.go_client.go",
+			"rest.go.client.go",
 		},
 	},
 }
@@ -147,12 +147,12 @@ func TestShootRest_Golden(t *testing.T) {
 	}
 }
 
-func generate(test Golden, gen shoot.Generator) map[string][]byte {
+func generate(test Golden, g shoot.Generator) map[string][]byte {
 	os.Args = strings.Split(test.cmd, " ")
 	flag.Parse()
 
-	gen.ParseFlags()
-
-	srcMap := gen.Generate()
+	g.ParseFlags()
+	g.ParsePackage(g)
+	srcMap := g.Generate(g)
 	return srcMap
 }

@@ -27,12 +27,12 @@ func main() {
 	)
 
 	ctx := context.Background()
-	err := myC.Set(ctx, myclient.NewKV("foo", "bar"))
+	_, err := myC.Set(ctx, myclient.NewKV("foo", "bar"))
 	if err != nil {
 		panic(err)
 	}
 
-	kv, err := myC.Get(ctx, "foo")
+	kv, _, err := myC.Get(ctx, "foo")
 	if err != nil {
 		panic(err)
 	}

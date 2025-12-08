@@ -8,7 +8,7 @@ import (
 )
 
 func (g *Generator) makeJson(typeName string) {
-	g.data.Register("jsontagof", transfer.ID)
+	g.RegisterTransfer("jsontagof", transfer.ID)
 
 	if !g.flags.json {
 		return
@@ -17,8 +17,8 @@ func (g *Generator) makeJson(typeName string) {
 	var exportedList []string
 	tagMap := make(map[string]string)
 
-	for _, f := range g.pkg.files {
-		ast.Inspect(f.file, func(n ast.Node) bool {
+	for _, f := range g.Package().Files() {
+		ast.Inspect(f.File(), func(n ast.Node) bool {
 			ts, ok := n.(*ast.TypeSpec)
 			if !ok {
 				return true
@@ -54,7 +54,7 @@ func (g *Generator) makeJson(typeName string) {
 		})
 	}
 	g.data.ExportedList = exportedList
-	g.data.Register("jsontagof", func(key string) string {
+	g.RegisterTransfer("jsontagof", func(key string) string {
 		return tagMap[key]
 	})
 	g.data.Json = true

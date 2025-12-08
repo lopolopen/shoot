@@ -13,8 +13,8 @@ import (
 )
 
 func (g *Generator) makeNew(typeName string) {
-	g.data.Register("typeof", transfer.ID)
-	g.data.Register("xof", transfer.ID)
+	g.RegisterTransfer("typeof", transfer.ID)
+	g.RegisterTransfer("xof", transfer.ID)
 
 	var imports string
 	var allList []string
@@ -24,13 +24,13 @@ func (g *Generator) makeNew(typeName string) {
 	typeMap := make(map[string]string)
 	xMap := make(map[string]string)
 
-	pkgPath := g.pkg.pkg.PkgPath
+	pkgPath := g.Package().Pkg().PkgPath
 	if pkgPath == shoot.SelfPkgPath {
 		g.data.Self = true
 	}
 
-	for _, f := range g.pkg.files {
-		ast.Inspect(f.file, func(n ast.Node) bool {
+	for _, f := range g.Package().Files() {
+		ast.Inspect(f.File(), func(n ast.Node) bool {
 			ts, ok := n.(*ast.TypeSpec)
 			if !ok {
 				return true
@@ -45,7 +45,7 @@ func (g *Generator) makeNew(typeName string) {
 				log.Fatalf("type %s is not a struct type", ts.Name.Name)
 			}
 
-			imports = buildImports(f.file.Imports)
+			imports = buildImports(f.File().Imports)
 
 			st, ok := ts.Type.(*ast.StructType)
 			if !ok {
@@ -102,10 +102,10 @@ func (g *Generator) makeNew(typeName string) {
 	}
 	g.data.EmbedList = embedList
 
-	g.data.Register("typeof", func(key string) string {
+	g.RegisterTransfer("typeof", func(key string) string {
 		return typeMap[key]
 	})
-	g.data.Register("xof", func(key string) string {
+	g.RegisterTransfer("xof", func(key string) string {
 		return xMap[key]
 	})
 }
