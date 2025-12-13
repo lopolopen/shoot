@@ -20,6 +20,9 @@ type EnumShooter[T any] interface {
 }
 
 type RestShooter interface {
-	// ~*T
 	ShootRest()
+}
+
+type MapShooter interface {
+	ShootMap()
 }

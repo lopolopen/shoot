@@ -20,6 +20,10 @@ func ToCamelCase(s string) string {
 		return s
 	}
 
+	if s == strings.ToUpper(s) {
+		return strings.ToLower(s)
+	}
+
 	s = ToPascalCase(s)
 	runes := []rune(s)
 	runes[0] = unicode.ToLower(runes[0])

@@ -5,11 +5,11 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
-	"log"
 	"sort"
 	"strings"
 
 	"github.com/lopolopen/shoot/internal/shoot"
+	"github.com/lopolopen/shoot/internal/tools/logx"
 )
 
 func (g *Generator) makeStr(typeName string) {
@@ -32,7 +32,7 @@ func (g *Generator) makeStr(typeName string) {
 
 					if ts.Assign.IsValid() {
 						if typeName == ts.Name.Name {
-							log.Fatalf("type %s should not be an alias", typeName)
+							logx.Fatalf("type %s should not be an alias", typeName)
 						}
 					}
 				}
@@ -82,20 +82,20 @@ func (g *Generator) makeStr(typeName string) {
 					// types.Const, and extract its value.
 					obj, ok := f.Pkg().Defs()[n]
 					if !ok {
-						log.Fatalf("no value for constant %s", n)
+						logx.Fatalf("no value for constant %s", n)
 					}
 					info := obj.Type().Underlying().(*types.Basic).Info()
 					if info&types.IsInteger == 0 {
-						log.Fatalf("can't handle non-integer constant type %s", typ)
+						logx.Fatalf("can't handle non-integer constant type %s", typ)
 					}
 					value := obj.(*types.Const).Val() // Guaranteed to succeed as this is CONST.
 					if value.Kind() != constant.Int {
-						log.Fatalf("can't happen: constant is not an integer %s", n)
+						logx.Fatalf("can't happen: constant is not an integer %s", n)
 					}
 					i64, isInt := constant.Int64Val(value)
 					u64, isUint := constant.Uint64Val(value)
 					if !isInt && !isUint {
-						log.Fatalf("internal error: value of %s is not an integer: %s", n, value.String())
+						logx.Fatalf("internal error: value of %s is not an integer: %s", n, value.String())
 					}
 					if !isInt {
 						u64 = uint64(i64)

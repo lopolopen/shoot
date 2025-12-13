@@ -3,6 +3,7 @@ package constructor
 import (
 	"go/ast"
 	"regexp"
+	"strings"
 
 	"github.com/lopolopen/shoot/internal/transfer"
 )
@@ -12,6 +13,18 @@ func (g *Generator) makeJson(typeName string) {
 
 	if !g.flags.json {
 		return
+	}
+
+	trans := transfer.ID
+	switch g.flags.tagcase {
+	case "pascal":
+		trans = transfer.ToPascalCase
+	case "camel":
+		trans = transfer.ToCamelCase
+	case "lower":
+		trans = strings.ToLower
+	case "upper":
+		trans = strings.ToUpper
 	}
 
 	var exportedList []string
@@ -40,9 +53,10 @@ func (g *Generator) makeJson(typeName string) {
 					var tag string
 					if field.Tag != nil {
 						tag = jsonTag(field.Tag.Value)
+						//todo: tag == "" ?
 						tagMap[name.Name] = tag
 					} else {
-						tagMap[name.Name] = name.Name
+						tagMap[name.Name] = trans(name.Name)
 					}
 
 					if ast.IsExported(name.Name) {
@@ -54,6 +68,7 @@ func (g *Generator) makeJson(typeName string) {
 		})
 	}
 	g.data.ExportedList = exportedList
+	//todo: refactor
 	g.RegisterTransfer("jsontagof", func(key string) string {
 		return tagMap[key]
 	})

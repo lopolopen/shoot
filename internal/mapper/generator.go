@@ -1,0 +1,307 @@
+package mapper
+
+import (
+	_ "embed"
+	"flag"
+	"fmt"
+	"go/ast"
+	"go/types"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+
+	"github.com/lopolopen/shoot/internal/shoot"
+	"github.com/lopolopen/shoot/internal/tools/logx"
+	"golang.org/x/tools/go/packages"
+)
+
+const SubCmd = "map"
+
+//go:embed mapper.tmpl
+var tmplTxt string
+
+// Generator holds the state of the analysis.
+type Generator struct {
+	*shoot.GeneratorBase
+	flags              *Flags
+	data               *TmplData
+	destPkg            *packages.Package
+	mapperpkg          *packages.Package
+	exportedFields     []Field
+	destExportedFields []Field
+	srcPtrTypeMap      map[string]string
+	destPtrTypeMap     map[string]string
+	srcPathsMap        map[string][]string
+	destPathsMap       map[string][]string
+	mappingFuncList    []Func
+
+	writeSrcSet  map[string]bool
+	writeDestSet map[string]bool
+	readSrcMap   map[string]string
+	writeSrcMap  map[string]string
+
+	tagMap map[string]string
+}
+
+func New() *Generator {
+	g := &Generator{
+		GeneratorBase: shoot.NewGeneratorBase(SubCmd, tmplTxt),
+	}
+	return g
+}
+
+func (g *Generator) qualifier(pkg *types.Package) string {
+	if pkg == nil {
+		return ""
+	}
+	if pkg.Path() == g.Pkg().PkgPath {
+		return ""
+	}
+	if pkg.Path() == g.destPkg.PkgPath {
+		if g.flags.alias != "" {
+			return g.flags.alias
+		}
+		return pkg.Name()
+	}
+	return pkg.Name()
+}
+
+func (g *Generator) ParseFlags() {
+	sub := flag.NewFlagSet(SubCmd, flag.ExitOnError)
+	path := sub.String("path", "", "destination package path to map to")
+	alias := sub.String("alias", "", "destination package alias")
+	destTypes := sub.String("to", "", "destination type names to map to (must align to -type)")
+	g.ParseCommonFlags(sub)
+
+	typNames := g.CommonFlags().TypeNames
+	typMap := make(map[string]string)
+	if len(typNames) == 0 {
+		if *destTypes != "" {
+			logx.Fatal("-to only works when -type used")
+		}
+	} else {
+		destTypNames := strings.Split(*destTypes, ",")
+		if *destTypes != "" && len(destTypNames) != len(typNames) {
+			logx.Fatal("-to list must align to -type list")
+		}
+		if *destTypes == "" {
+			for i, n := range typNames {
+				typMap[n] = typNames[i]
+			}
+		} else {
+			for i, n := range typNames {
+				typMap[n] = destTypNames[i]
+			}
+		}
+	}
+
+	dir := filepath.Join(g.CommonFlags().Dir, *path)
+	if !filepath.IsAbs(dir) && !strings.HasPrefix(dir, ".") {
+		dir = "./" + dir
+	}
+	_, err := os.Stat(dir)
+	if !(err == nil || os.IsExist(err)) {
+		logx.Fatalf("dest dir not exists: %s", dir)
+	}
+
+	g.flags = &Flags{
+		destDir:   dir,
+		destTypes: typMap,
+		alias:     *alias,
+	}
+}
+
+func (g *Generator) LoadPackage() {
+	cwd := g.CommonFlags().Dir
+	destDir := g.flags.destDir
+	cfg := &packages.Config{
+		Mode: packages.NeedName |
+			packages.NeedFiles |
+			packages.NeedSyntax |
+			packages.NeedTypes |
+			packages.NeedTypesInfo,
+	}
+	pkgs, err := loadPkgs(cfg, cwd, destDir)
+	if err != nil {
+		logx.Fatalf("%s", err)
+	}
+
+	//todo: check that each path has only one pkg
+
+	pkg := pkgs[cwd]
+	if g.CommonFlags().FileName != "" {
+		var fs []*ast.File
+		for _, f := range pkg.Syntax {
+			filename := pkg.Fset.File(f.Pos()).Name()
+			if filepath.Base(filename) == g.CommonFlags().FileName {
+				fs = append(fs, f)
+				break
+			}
+		}
+		pkg.Syntax = fs
+	} else if shoot.Contains(g.CommonFlags().TypeNames, "*") {
+	end:
+		for i, f := range pkg.Syntax {
+			for _, cg := range f.Comments {
+				for _, c := range cg.List {
+					if !findCmdLine(c.Text, g.CommonFlags().CmdLine) {
+						continue
+					}
+					filename := filepath.Base(pkg.GoFiles[i])
+					g.AllInOne = filename
+					break end
+				}
+			}
+		}
+	}
+
+	g.SetPkg(pkg)
+	g.destPkg = pkgs[destDir]
+	g.GeneratorBase.LoadPackage()
+}
+
+func findCmdLine(doc string, cmdline string) bool {
+	pat := fmt.Sprintf("(?im)^//go:generate.*%s$", regexp.QuoteMeta(cmdline))
+	regAll := regexp.MustCompile(pat)
+	new := regAll.Match([]byte(doc))
+	return new
+}
+
+func loadPkgs(cfg *packages.Config, patterns ...string) (map[string]*packages.Package, error) {
+	pkgs, err := packages.Load(cfg, patterns...)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[string]*packages.Package, len(patterns))
+
+	for _, pat := range patterns {
+		isPath := strings.HasPrefix(pat, ".") || strings.HasPrefix(pat, "/")
+
+		for _, pkg := range pkgs {
+			if isPath {
+				absPat, _ := filepath.Abs(pat)
+				if !strings.HasSuffix(absPat, pkg.Name) {
+					continue
+				}
+				for _, f := range pkg.GoFiles {
+					absFile, _ := filepath.Abs(f)
+					rel, err := filepath.Rel(absPat, absFile)
+					if err == nil && !strings.HasPrefix(rel, "..") {
+						result[pat] = pkg
+						break
+					}
+				}
+			} else {
+				if pkg.PkgPath == pat {
+					result[pat] = pkg
+				}
+			}
+			if result[pat] != nil {
+				break
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (g *Generator) MakeData(srcTypeName string) any {
+	g.data = NewTmplData(g.CommonFlags().CmdLine)
+
+	var destTypeName string
+	if g.flags.destTypes != nil {
+		if name, ok := g.flags.destTypes[srcTypeName]; ok {
+			destTypeName = name
+		}
+	}
+	if destTypeName == "" {
+		destTypeName = srcTypeName
+	}
+	g.data.DestTypeName = destTypeName
+
+	srcExists := g.parseSrcFields(srcTypeName)
+	if !srcExists {
+		logx.Fatalf("src type not exists: %s", srcTypeName)
+	}
+	destExists := g.parseDestFields(destTypeName)
+	if !destExists {
+		logx.Fatalf("dest type not exists: %s", destTypeName)
+	}
+	g.parseManual(srcTypeName, destTypeName)
+	mapperTypeName := g.loadTypeMapperPkg(srcTypeName)
+	if mapperTypeName != "" {
+		g.parseMapper(mapperTypeName)
+	}
+	g.makeMismatch() //priority: makeMismatch > makeMatch
+	g.makeMatch()
+
+	g.data.DestPkgName = g.destPkg.Name
+	g.data.DestPkgPath = g.destPkg.PkgPath
+	g.data.DestPkgAlias = g.flags.alias
+	same := g.destPkg.PkgPath == g.Pkg().PkgPath
+	g.data.QualifiedDestTypeName = qualifiedName(g.data.DestPkgName, g.data.DestPkgAlias, g.data.DestTypeName, same)
+
+	g.data.SetTypeName(srcTypeName)
+	g.data.SetPackageName(g.Pkg().Name)
+
+	g.makeReadWriteCheck()
+	return g.data
+}
+
+func (g *Generator) ListTypes() []string {
+	var typeNames []string
+	for _, f := range g.Pkg().Syntax {
+		ast.Inspect(f, func(n ast.Node) bool {
+			if !g.testNode("", n) {
+				return true
+			}
+
+			ts, _ := n.(*ast.TypeSpec)
+			typeNames = append(typeNames, ts.Name.Name)
+			return false
+		})
+	}
+	return typeNames
+}
+
+func (g *Generator) testNode(srcType string, node ast.Node) bool {
+	ts, ok := node.(*ast.TypeSpec)
+	if !ok {
+		return false
+	}
+
+	if srcType != "" && ts.Name.Name != srcType {
+		return false
+	}
+
+	_, ok = ts.Type.(*ast.StructType) //empty struct is ok
+	if !ok {
+		return false
+	}
+
+	if srcType == "" && !ast.IsExported(ts.Name.Name) {
+		return false
+	}
+
+	return true
+}
+
+func qualifiedName(pkg string, pkgAlias string, name string, same bool) string {
+	if same {
+		return name
+	}
+	if pkgAlias != "" {
+		pkg = pkgAlias
+	}
+	return fmt.Sprintf("%s.%s", pkg, name)
+}
+
+func (g *Generator) readDestMap() map[string]string {
+	return g.writeSrcMap
+}
+
+func (g *Generator) writeDestMap() map[string]string {
+	return g.readSrcMap
+}

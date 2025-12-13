@@ -9,14 +9,17 @@ import (
 
 	"github.com/lopolopen/shoot/internal/constructor"
 	"github.com/lopolopen/shoot/internal/enumer"
+	"github.com/lopolopen/shoot/internal/mapper"
 	"github.com/lopolopen/shoot/internal/restclient"
 	"github.com/lopolopen/shoot/internal/shoot"
+	"github.com/lopolopen/shoot/internal/tools/logx"
 )
 
 var subCmdMap = map[string]string{
-	constructor.SubCmd: "[-opt] [-getset] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+	constructor.SubCmd: "[-opt] [-getset] [-json] [-exp] [-tagcase=<case>] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
 	enumer.SubCmd:      "[-json] [-text] -[bit] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
 	restclient.SubCmd:  "[-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+	mapper.SubCmd:      "[-path=<path>] [-alias=<alias>] [-to=<DestType>] [-type=<SrcType> | -file=<GoFile>] [dir] [-s] [-v]",
 }
 
 func main() {
@@ -27,7 +30,12 @@ func main() {
 		log.Println(`These are all the sub commands supported as of now:`)
 		log.Println()
 
-		for _, sc := range []string{constructor.SubCmd, enumer.SubCmd} {
+		for _, sc := range []string{
+			constructor.SubCmd,
+			enumer.SubCmd,
+			restclient.SubCmd,
+			mapper.SubCmd,
+		} {
 			log.Printf("%s %s\n", sc, subCmdMap[sc])
 			log.Println()
 		}
@@ -51,12 +59,15 @@ func main() {
 		g = enumer.New()
 	case restclient.SubCmd:
 		g = restclient.New()
+	case mapper.SubCmd:
+		g = mapper.New()
 	default:
 		flag.Usage()
 		os.Exit(2)
 	}
 
 	g.ParseFlags()
+	g.LoadPackage()
 	g.ParsePackage(g)
 	srcMap := g.Generate(g)
 	var fileNames []string
@@ -66,11 +77,11 @@ func main() {
 	}
 
 	if len(srcMap) == 0 {
-		log.Printf("[warn:] nothing generated: [%s]", strings.Join(flag.Args(), " "))
+		logx.Warnf("nothing generated: [%s]", strings.Join(flag.Args(), " "))
 		return
 	}
 
-	log.Printf("go generate successfully: [%s]\n", strings.Join(flag.Args(), " "))
+	log.Printf("🎉 go generate successfully: [%s]\n", strings.Join(flag.Args(), " "))
 	for _, fn := range fileNames {
 		log.Printf("\t%s\n", fn)
 	}
@@ -85,19 +96,19 @@ func notedownSrc(fileName string, src []byte) {
 		}
 	}()
 	if err != nil {
-		log.Fatalf("creating temporary file for output: %s", err)
+		logx.Fatalf("creating temporary file for output: %s", err)
 	}
 	_, err = tmpFile.Write(src)
 	if err != nil {
 		tmpFile.Close()
 		os.Remove(tmpFile.Name())
-		log.Fatalf("writing output: %s", err)
+		logx.Fatalf("writing output: %s", err)
 	}
 	tmpFile.Close()
 
 	// rename tmpfile to output file
 	err = os.Rename(tmpFile.Name(), fileName)
 	if err != nil {
-		log.Fatalf("moving tempfile to output file: %s", err)
+		logx.Fatalf("moving tempfile to output file: %s", err)
 	}
 }

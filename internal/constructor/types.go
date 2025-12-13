@@ -1,8 +1,26 @@
 package constructor
 
 import (
+	"fmt"
+
 	"github.com/lopolopen/shoot/internal/shoot"
 )
+
+type TagCase string
+
+func (v *TagCase) Set(value string) error {
+	switch value {
+	case "pascal", "camel", "lower", "upper":
+		*v = TagCase(value)
+		return nil
+	default:
+		return fmt.Errorf("invalid tag case: %s", value)
+	}
+}
+
+func (v *TagCase) String() string {
+	return string(*v)
+}
 
 type TmplData struct {
 	*shoot.TmplDataBase
@@ -25,9 +43,9 @@ type TmplData struct {
 	Short        bool
 }
 
-func NewTmplData() *TmplData {
+func NewTmplData(cmdline string) *TmplData {
 	return &TmplData{
-		TmplDataBase: shoot.NewTmplDataBase(),
+		TmplDataBase: shoot.NewTmplDataBase(cmdline),
 	}
 }
 
@@ -41,8 +59,10 @@ type Flags struct {
 	//[get] => get-only
 	//[set] => set-only
 	//[get;set] => get+set
-	getset bool
-	json   bool
-	opt    bool
-	short  bool
+	getset  bool
+	json    bool
+	tagcase string
+	opt     bool
+	exp     bool
+	short   bool
 }

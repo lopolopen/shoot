@@ -1,0 +1,200 @@
+package mapper
+
+import (
+	"fmt"
+	"sort"
+	"strings"
+
+	"github.com/lopolopen/shoot/internal/tools/logx"
+	"github.com/lopolopen/shoot/internal/transfer"
+)
+
+//tips: write src means read rest, and vice versa
+
+const dot = "."
+
+func (g *Generator) makeReadWriteCheck() {
+	g.makeReadCond()
+	g.nilCheckRead()
+	g.nilCheckWrite()
+	g.neverWriteCheck()
+}
+
+func (g *Generator) nilCheckRead() {
+	g.data.DestNeedReadCheckMap = make(map[string]string)
+	g.data.SrcNeedReadCheckMap = make(map[string]string)
+
+	for _, f := range g.exportedFields {
+		s := f.name
+
+		d, ok := g.readSrcMap[s]
+		if ok {
+			if _, ok := g.srcPathsMap[s]; ok {
+				g.data.SrcNeedReadCheckMap[s] = d
+			}
+		}
+
+		d, ok = g.readDestMap()[s]
+		if ok {
+			if _, ok := g.destPathsMap[d]; ok {
+				g.data.DestNeedReadCheckMap[f.name] = d
+			}
+		}
+	}
+
+}
+
+func (g *Generator) neverWriteCheck() {
+	var neverWriteSrc []string
+	var neverWriteDest []string
+
+	for _, f := range g.exportedFields {
+		s := f.name
+
+		if g.writeSrcSet[s] {
+			continue
+		}
+		c := false
+		for path := range g.writeSrcSet { //Model covers Model.ID
+			if f.CoveredBy(path) {
+				c = true
+				break
+			}
+		}
+		if c {
+			continue
+		}
+		neverWriteSrc = append(neverWriteSrc, f.path)
+	}
+
+	for _, f := range g.destExportedFields {
+		d := f.name
+
+		if g.writeDestSet[d] {
+			continue
+		}
+		c := false
+		for path := range g.writeDestSet {
+			if f.CoveredBy(path) {
+				c = true
+				break
+			}
+		}
+		if c {
+			continue
+		}
+
+		neverWriteDest = append(neverWriteDest, f.path)
+	}
+
+	if len(neverWriteSrc) > 0 {
+		names := strings.Join(neverWriteSrc, ", ")
+		reportWarn(g.data.PackageName+"."+g.data.TypeName, names)
+	}
+	if len(neverWriteDest) > 0 {
+		names := strings.Join(neverWriteDest, ", ")
+		reportWarn(g.data.QualifiedDestTypeName, names)
+	}
+}
+
+func reportWarn(typename, fields string) {
+	logx.Warnf("%s: these fields are never assigned:\n\t%s", typename, fields)
+}
+
+func (g *Generator) makeReadCond() {
+	g.RegisterTransfer("condofread", transfer.ID)
+
+	g.srcPathsMap = make(map[string][]string)
+	g.destPathsMap = make(map[string][]string)
+	prepareReadPaths(g.exportedFields, g.srcPtrTypeMap, g.srcPathsMap)
+	prepareReadPaths(g.destExportedFields, g.destPtrTypeMap, g.destPathsMap)
+
+	g.RegisterTransfer("condofread", func(v, name string, isSrc bool) string {
+		var pathsMap map[string][]string
+		if isSrc {
+			pathsMap = g.srcPathsMap
+		} else {
+			pathsMap = g.destPathsMap
+		}
+		paths := pathsMap[name]
+		sort.Strings(paths)
+		ps := make([]string, len(paths))
+		for i, p := range paths {
+			ps[i] = fmt.Sprintf(" %s.%s != nil ", v, p)
+		}
+		return strings.Join(ps, "&&")
+	})
+}
+
+func prepareReadPaths(fields []Field, ptrTypeMap map[string]string, readPathsMap map[string][]string) {
+	for _, f := range fields {
+		if !f.IsEmbeded() {
+			continue
+		}
+
+		var readPaths []string
+		ps := strings.Split(f.path, dot)
+		for i := 1; i < len(ps); i++ {
+			path := strings.Join(ps[:i], dot)
+			_, ok := ptrTypeMap[path]
+			if !ok {
+				continue
+			}
+			readPaths = append(readPaths, path)
+		}
+		readPathsMap[f.name] = readPaths
+	}
+}
+
+func (g *Generator) nilCheckWrite() {
+	g.data.SrcPtrTypeMap = make(map[string]string)
+	g.data.DestPtrTypeMap = make(map[string]string)
+
+	var srcPtrPathList []string
+	var destPtrPathList []string
+	for _, f := range g.exportedFields {
+		s := f.name
+
+		_, ok := g.writeSrcMap[s]
+		if ok && f.IsEmbeded() {
+			for p, t := range g.srcPtrTypeMap {
+				if _, ok := g.data.SrcPtrTypeMap[p]; ok {
+					continue
+				}
+
+				if f.CoveredBy(p) {
+					srcPtrPathList = append(srcPtrPathList, p)
+					g.data.SrcPtrTypeMap[p] = t
+				}
+			}
+		}
+	}
+
+	for _, f := range g.destExportedFields {
+		for _, d := range g.writeDestMap() {
+			if f.name != d {
+				continue
+			}
+
+			if !f.IsEmbeded() {
+				continue
+			}
+
+			for p, t := range g.destPtrTypeMap {
+				if _, ok := g.data.DestPtrTypeMap[p]; ok {
+					continue
+				}
+
+				if f.CoveredBy(p) {
+					destPtrPathList = append(destPtrPathList, p)
+					g.data.DestPtrTypeMap[p] = t
+				}
+			}
+		}
+	}
+
+	sort.Strings(srcPtrPathList)
+	g.data.SrcPtrPathList = srcPtrPathList
+	sort.Strings(destPtrPathList)
+	g.data.DestPtrPathList = destPtrPathList
+}

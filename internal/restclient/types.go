@@ -5,7 +5,7 @@ import (
 )
 
 type TmplData struct {
-	shoot.TmplDataBase
+	*shoot.TmplDataBase
 	MethodList      []string
 	SigMap          map[string]string
 	HTTPMethodMap   map[string]string
@@ -26,9 +26,9 @@ type TmplData struct {
 	BodyHTTPMethods []string
 }
 
-func NewTmplData() *TmplData {
+func NewTmplData(cmdline string) *TmplData {
 	return &TmplData{
-		TmplDataBase: *shoot.NewTmplDataBase(),
+		TmplDataBase: shoot.NewTmplDataBase(cmdline),
 	}
 }
 
