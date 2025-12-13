@@ -8,6 +8,7 @@ import (
 )
 
 type Price decimal.Decimal
+type Decimal = decimal.Decimal
 
 type Order struct {
 	ID        string
@@ -17,7 +18,8 @@ type Order struct {
 	Address   OrderAddress
 	X         int
 	Price     Price
-	Int       int32
+	Price2    Decimal
+	Value     int32
 }
 
 func (o *Order) DomainMethod() {

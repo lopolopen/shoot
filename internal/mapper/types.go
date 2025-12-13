@@ -11,7 +11,7 @@ type TmplData struct {
 	DestTypeName          string
 	DestPkgName           string
 	QualifiedDestTypeName string
-	FieldList             []string
+	SrcFieldList          []string
 	ExactMatchMap         map[string]string
 	ConvMatchMap          map[string]string
 	SrcToDestTypeMap      map[string]string

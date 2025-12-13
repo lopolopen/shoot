@@ -2,26 +2,35 @@
 
 package dto
 
-import "mappersample/domain/model"
+import (
+	"mappersample/domain/model"
+
+	"github.com/shopspring/decimal"
+)
 
 // ToModel converts receiver to type model.Order
 func (o *Order) ToModel() *model.Order {
 	order_ := new(model.Order)
-	order_.Status = o.Status
-	order_.Int = int32(o.Int)
-	order_.Price = model.Price(o.Price)
+	order_.ID = o.ID
 	order_.Amount = o.StringToDecimal(o.Amount)
+	order_.Status = o.Status
 	order_.OrderTime = o.StringToTime(o.OrderingTime)
+	order_.Price = model.Price(o.Price)
+	order_.Price2 = o.Price2
+	order_.Value = int32(o.Value)
 	o.writeModel(order_)
 	return order_
 }
 
 // FromModel read from type model.Order, then write back to receiver
 func (o *Order) FromModel(order_ *model.Order) *Order {
-	o.Status = order_.Status
+	o.ID = order_.ID
 	o.Amount = o.DecimalToString(order_.Amount)
+	o.Status = order_.Status
 	o.OrderingTime = o.TimeToString(order_.OrderTime)
-	o.readModel(*order_)
+	o.Price = decimal.Decimal(o.Price)
+	o.Price2 = order_.Price2
+	o.Value = int(o.Value)
 	return o
 }
 

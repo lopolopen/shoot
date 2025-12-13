@@ -17,24 +17,14 @@ type Order struct {
 	Status       enums.OrderStatus `json:"status"`
 	OrderingTime string            `json:"orderingTime" map:"OrderTime"`
 	Address      OrderAddress      `json:"address"`
-	Non          int
+	Non          int               `map:"-"`
 	Price        decimal.Decimal
-	Int          int
+	Price2       decimal.Decimal
+	Value        int
 }
-
-// func (o Order) newModel() *model.Order {
-// 	return new(model.Order)
-// }
 
 func (o Order) writeModel(dest *model.Order) {
-	dest.ID = o.ID + "test"
 	dest.X = 0 //suppress warnings
-	// dest.Price = model.Price(o.Price)
-}
-
-func (o *Order) readModel(dest model.Order) {
-	o.ID = dest.ID + "test"
-	o.Non = 0 //suppress warnings or map:"-"
 }
 
 type OrderAddress struct {

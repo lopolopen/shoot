@@ -7,16 +7,16 @@ import "mappersample/domain/model"
 // ToModel converts receiver to type model.User
 func (u *User) ToModel() *model.User {
 	user_ := new(model.User)
-	user_.Email = u.Email
 	user_.ID = u.ID
+	user_.Email = u.Email
 	u.toModel(user_)
 	return user_
 }
 
 // FromModel read from type model.User, then write back to receiver
 func (u *User) FromModel(user_ *model.User) *User {
-	u.Email = user_.Email
 	u.ID = user_.ID
+	u.Email = user_.Email
 	u.fromModel(*user_)
 	return u
 }

@@ -8,31 +8,51 @@ package {{.PackageName}}
 // To{{pascalCase .DestPkgName}} converts receiver to type {{.QualifiedDestTypeName}}
 func ({{$src}} *{{.TypeName}}) To{{pascalCase .DestPkgName}}() *{{.QualifiedDestTypeName}} {
     {{$dest}} := new({{.QualifiedDestTypeName}}) {{"\n"}}
-    {{- range $s, $d := $.ExactMatchMap -}}
+
+    {{- range $s := $.SrcFieldList -}}
+    {{- $d := index $.ExactMatchMap $s -}}
+    {{- if $d -}}
     {{$dest}}.{{$d}} = {{$src}}.{{$s}}{{"\n"}}
     {{- end -}}
 
-    {{- range $s, $type := $.SrcToDestTypeMap -}}
+    {{- $type := index $.SrcToDestTypeMap $s -}}
+    {{- if $type -}}
     {{$dest}}.{{index $.ConvMatchMap $s}} = {{$type}}({{$src}}.{{$s}}) {{"\n"}}
     {{- end -}}
 
-    {{- range $s, $func := $.SrcToDestFuncMap -}}
+    {{- $func := index $.SrcToDestFuncMap $s -}}
+    {{- if $func -}}
     {{$dest}}.{{index $.MismatchMap $s}} = {{$src}}.{{$func}}({{$src}}.{{$s}}) {{"\n"}}
     {{- end -}}
+    {{- end -}}
+
     {{- if $.WriteMethodName -}}
     {{$src}}.{{$.WriteMethodName}}({{$dest}}) {{"\n"}}
     {{- end -}}
+
     return {{$dest}}
 }
 
 // From{{pascalCase .DestPkgName}} read from type {{.QualifiedDestTypeName}}, then write back to receiver
 func ({{$src}} *{{.TypeName}}) From{{pascalCase .DestPkgName}}({{$dest}} *{{.QualifiedDestTypeName}}) *{{.TypeName}} { {{"\n"}}
-    {{- range $s, $d := $.ExactMatchMap -}}
+    {{- range $s := $.SrcFieldList -}}
+
+    {{- $d := index $.ExactMatchMap $s -}}
+    {{- if $d -}}
     {{$src}}.{{$s}} = {{$dest}}.{{$d}}{{"\n"}}
     {{- end -}}
-    {{- range $s, $func := $.DestToSrcFuncMap -}}
+
+    {{- $type := index $.DestToSrcTypeMap $s -}}
+    {{- if $type -}}
+    {{$src}}.{{$s}} = {{$type}}({{$src}}.{{index $.ConvMatchMap $s}}) {{"\n"}}
+    {{- end -}}
+
+    {{- $func := index $.DestToSrcFuncMap $s -}}
+    {{- if $func -}}
     {{$src}}.{{$s}} = {{$src}}.{{$func}}({{$dest}}.{{index $.MismatchMap $s}}) {{"\n"}}
     {{- end -}}
+    {{- end -}}
+
     {{- if $.ReadMethodName -}}
     {{$src}}.{{$.ReadMethodName}}({{$.ReadParamPrefix}}{{$dest}}) {{"\n"}}
     {{- end -}}

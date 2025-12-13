@@ -9,6 +9,7 @@ import (
 func (g *Generator) parseSrcFields(srcTypeName string) {
 	g.tagMap = make(map[string]string)
 
+	var srcFieldList []string
 	var expList []Field
 	for _, f := range g.Pkg().Syntax {
 		ast.Inspect(f, func(n ast.Node) bool {
@@ -39,6 +40,7 @@ func (g *Generator) parseSrcFields(srcTypeName string) {
 					}
 				}
 
+				srcFieldList = append(srcFieldList, name)
 				expList = append(expList, Field{
 					name: name,
 					typ:  g.Pkg().TypesInfo.TypeOf(field.Type),
@@ -49,6 +51,7 @@ func (g *Generator) parseSrcFields(srcTypeName string) {
 	}
 
 	g.srcExpList = expList
+	g.data.SrcFieldList = srcFieldList
 }
 
 func (g *Generator) parseDestFields(destTypeName string) {
