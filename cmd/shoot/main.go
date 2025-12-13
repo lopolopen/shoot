@@ -9,6 +9,7 @@ import (
 
 	"github.com/lopolopen/shoot/internal/constructor"
 	"github.com/lopolopen/shoot/internal/enumer"
+	"github.com/lopolopen/shoot/internal/mapper"
 	"github.com/lopolopen/shoot/internal/restclient"
 	"github.com/lopolopen/shoot/internal/shoot"
 )
@@ -51,12 +52,15 @@ func main() {
 		g = enumer.New()
 	case restclient.SubCmd:
 		g = restclient.New()
+	case mapper.SubCmd:
+		g = mapper.New()
 	default:
 		flag.Usage()
 		os.Exit(2)
 	}
 
 	g.ParseFlags()
+	g.LoadPackage()
 	g.ParsePackage(g)
 	srcMap := g.Generate(g)
 	var fileNames []string
@@ -66,11 +70,11 @@ func main() {
 	}
 
 	if len(srcMap) == 0 {
-		log.Printf("[warn:] nothing generated: [%s]", strings.Join(flag.Args(), " "))
+		log.Printf("⚠️ nothing generated: [%s]", strings.Join(flag.Args(), " "))
 		return
 	}
 
-	log.Printf("go generate successfully: [%s]\n", strings.Join(flag.Args(), " "))
+	log.Printf("🎉 go generate successfully: [%s]\n", strings.Join(flag.Args(), " "))
 	for _, fn := range fileNames {
 		log.Printf("\t%s\n", fn)
 	}
@@ -85,19 +89,19 @@ func notedownSrc(fileName string, src []byte) {
 		}
 	}()
 	if err != nil {
-		log.Fatalf("creating temporary file for output: %s", err)
+		log.Fatalf("❌ creating temporary file for output: %s", err)
 	}
 	_, err = tmpFile.Write(src)
 	if err != nil {
 		tmpFile.Close()
 		os.Remove(tmpFile.Name())
-		log.Fatalf("writing output: %s", err)
+		log.Fatalf("❌ writing output: %s", err)
 	}
 	tmpFile.Close()
 
 	// rename tmpfile to output file
 	err = os.Rename(tmpFile.Name(), fileName)
 	if err != nil {
-		log.Fatalf("moving tempfile to output file: %s", err)
+		log.Fatalf("❌ moving tempfile to output file: %s", err)
 	}
 }

@@ -63,7 +63,7 @@ func (g *Generator) MakeData(typeName string) any {
 	return g.data
 }
 
-func (g *Generator) FilterTypes() []string {
+func (g *Generator) ListTypes() []string {
 	var typeNames []string
 	pkg := g.Package()
 	for _, f := range pkg.Files() {
@@ -100,7 +100,7 @@ func (g *Generator) FilterTypes() []string {
 					}
 
 					if ts.Assign.IsValid() {
-						log.Printf("[warn:] alias type %s will be ignored", ts.Name.Name)
+						log.Printf("⚠️ alias type %s will be ignored", ts.Name.Name)
 					} else {
 						typeNames = append(typeNames, ts.Name.Name)
 					}

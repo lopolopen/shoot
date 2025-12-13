@@ -43,12 +43,12 @@ func (g *Generator) makeOpt(typeName string) {
 						v, ok := parseDefault(field.Doc.Text())
 						if ok {
 							if !g.flags.opt {
-								log.Fatalf("should not use instruction def(ault) when -opt(ion) disabled")
+								log.Fatalf("❌ should not use instruction def(ault) when -opt(ion) disabled")
 							}
 
 							if len(g.data.NewList) != len(g.data.AllList)-len(g.data.ExportedList) {
 								if shoot.Contains(g.data.NewList, name.Name) {
-									log.Fatalf("should not apply both instruction new and def(ault) to field %s of type %s", name.Name, typeName)
+									log.Fatalf("❌ should not apply both instruction new and def(ault) to field %s of type %s", name.Name, typeName)
 								}
 							}
 

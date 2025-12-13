@@ -42,7 +42,7 @@ func (g *Generator) makeNew(typeName string) {
 
 			_, ok = ts.Type.(*ast.StructType)
 			if !ok {
-				log.Fatalf("type %s is not a struct type", ts.Name.Name)
+				log.Fatalf("❌ type %s is not a struct type", ts.Name.Name)
 			}
 
 			imports = buildImports(f.File().Imports)
@@ -97,6 +97,8 @@ func (g *Generator) makeNew(typeName string) {
 	g.data.AllList = allList
 	if len(newList) > 0 {
 		g.data.NewList = newList
+	} else if g.flags.exp {
+		g.data.NewList = allList
 	} else {
 		g.data.NewList = unexportedList
 	}
@@ -135,7 +137,7 @@ func exprString(fset *token.FileSet, expr ast.Expr) string {
 	var buf bytes.Buffer
 	err := printer.Fprint(&buf, fset, expr)
 	if err != nil {
-		log.Fatalf("print expr: %s", err)
+		log.Fatalf("❌ print expr: %s", err)
 	}
 	return buf.String()
 }

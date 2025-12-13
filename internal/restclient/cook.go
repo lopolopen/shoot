@@ -60,6 +60,8 @@ func (g *Generator) cookClient(typeName string) {
 			ts, _ := n.(*ast.TypeSpec)
 			iface, _ := ts.Type.(*ast.InterfaceType)
 			for _, field := range iface.Methods.List {
+				//shoot.RestClient[Client]
+				//todo:
 				if len(field.Names) == 0 {
 					if field.Doc != nil {
 						headers := parseHeaders(field.Doc.Text())
@@ -80,13 +82,13 @@ func (g *Generator) cookClient(typeName string) {
 					g.data.SigMap[methodName] = methodSignature(field) //full signature
 
 					if field.Doc == nil {
-						log.Printf("[warn:] method %s without comments will be ignored", methodName)
+						log.Printf("⚠️ method %s without comments will be ignored", methodName)
 						continue
 					}
 
 					httpMethod, path, pathParams, ok := parsePath(doc) //pathParams ~ [id]
 					if !ok {
-						log.Printf("[warn:] method %s with bad comments will be ignored", methodName)
+						log.Printf("⚠️ method %s with bad comments will be ignored", methodName)
 						continue
 					}
 
@@ -133,25 +135,25 @@ func (g *Generator) cookClient(typeName string) {
 						n = len(ftype.Results.List)
 					}
 					if n < 2 {
-						log.Fatalf("method %s should at least return response and error", methodName)
+						log.Fatalf("❌ method %s should at least return response and error", methodName)
 					}
 					if n > 3 {
-						log.Fatalf("method %s must not return more than three values", methodName)
+						log.Fatalf("❌ method %s must not return more than three values", methodName)
 					}
 
 					second2last := exprToString(ftype.Results.List[n-2].Type)
 					if second2last != "*http.Response" {
-						log.Fatalf("the second to last return value of method %s must be a http response pointer", methodName)
+						log.Fatalf("❌ the second to last return value of method %s must be a http response pointer", methodName)
 					}
 					last := exprToString(ftype.Results.List[n-1].Type)
 					if last != "error" {
-						log.Fatalf("the last return value of method %s must be an error", methodName)
+						log.Fatalf("❌ the last return value of method %s must be an error", methodName)
 					}
 
 					if n == 3 {
 						r := ftype.Results.List[0]
 						if len(r.Names) > 0 {
-							log.Fatalf("method %s with named return list is not supported", methodName)
+							log.Fatalf("❌ method %s with named return list is not supported", methodName)
 						}
 
 						name, isPtr := getReturnTypeName(r.Type)
@@ -177,7 +179,7 @@ func exprToString(expr ast.Expr) string {
 	var buf bytes.Buffer
 	err := printer.Fprint(&buf, token.NewFileSet(), expr)
 	if err != nil {
-		log.Fatalf("print expr: %s", err)
+		log.Fatalf("❌ print expr: %s", err)
 	}
 	return buf.String()
 }
@@ -253,7 +255,7 @@ func parsePath(doc string) (string, string, []string, bool) {
 
 	regPath := regexp.MustCompile(`^("[^"]+"|[^"]+)$`)
 	if !regPath.MatchString(path) {
-		log.Fatalf("bad path format: %s", path)
+		log.Fatalf("❌ bad path format: %s", path)
 	}
 
 	path = strings.Trim(path, `"`)
@@ -308,7 +310,7 @@ func getReturnTypeName(expr ast.Expr) (string, bool) {
 	case *ast.MapType:
 		typeName = exprToString(t)
 	default:
-		log.Fatalf("unsupported return type: %T", expr)
+		log.Fatalf("❌ unsupported return type: %T", expr)
 	}
 	return typeName, isPtr
 }
