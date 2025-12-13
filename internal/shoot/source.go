@@ -31,12 +31,16 @@ func MergeSources(sources ...[]byte) ([]byte, error) {
 
 	pkgName := files[0].Name.Name
 
-	importMap := map[string]bool{}
+	importSet := map[string]bool{}
 	var importDecls []ast.Decl
 	for _, f := range files {
 		for _, imp := range f.Imports {
-			if !importMap[imp.Path.Value] {
-				importMap[imp.Path.Value] = true
+			key := imp.Path.Value
+			if imp.Name != nil {
+				key = key + imp.Name.Name
+			}
+			if !importSet[key] {
+				importSet[key] = true
 				importDecls = append(importDecls, &ast.GenDecl{
 					Tok:   token.IMPORT,
 					Specs: []ast.Spec{imp},

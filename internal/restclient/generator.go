@@ -5,7 +5,6 @@ import (
 	"flag"
 	"go/ast"
 	"go/types"
-	"strings"
 
 	"github.com/lopolopen/shoot/internal/shoot"
 )
@@ -23,7 +22,7 @@ type Generator struct {
 
 func New() *Generator {
 	g := &Generator{
-		GeneratorBase: shoot.NewGeneratorBase(SubCmd, tmplTxt), data: NewTmplData(),
+		GeneratorBase: shoot.NewGeneratorBase(SubCmd, tmplTxt),
 	}
 	return g
 }
@@ -35,14 +34,14 @@ func (g *Generator) ParseFlags() {
 }
 
 func (g *Generator) MakeData(typeName string) any {
+	g.data = NewTmplData(g.CommonFlags().CmdLine)
 	g.cookClient(typeName)
 	g.data.SetTypeName(typeName)
 	g.data.SetPackageName(g.Package().Name())
-	g.data.SetCmd(strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "))
 	return g.data
 }
 
-func (g *Generator) FilterTypes() []string {
+func (g *Generator) ListTypes() []string {
 	var typeNames []string
 	for _, f := range g.Package().Files() {
 		ast.Inspect(f.File(), func(n ast.Node) bool {
@@ -73,7 +72,6 @@ func (g *Generator) testNode(typeName string, node ast.Node) bool {
 		return false
 	}
 
-	isRestClient := false
 	for _, field := range iface.Methods.List {
 		if len(field.Names) > 0 {
 			continue
@@ -87,9 +85,8 @@ func (g *Generator) testNode(typeName string, node ast.Node) bool {
 		obj := named.Obj()
 		pkgPath := obj.Pkg().Path()
 		if pkgPath == shoot.SelfPkgPath && obj.Name() == "RestClient" {
-			isRestClient = true
-			break
+			return true
 		}
 	}
-	return isRestClient
+	return false
 }

@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
-	"log"
 	"net/http"
 
 	"github.com/lopolopen/shoot/internal/shoot"
+	"github.com/lopolopen/shoot/internal/tools/logx"
 	"github.com/lopolopen/shoot/internal/transfer"
 )
 
@@ -26,7 +26,7 @@ func (g *Generator) handleExpr(paramType ast.Expr, name *ast.Ident, file *ast.Fi
 		// fmt.Println(">>>>", "StarExpr")
 		g.handleExpr(t.X, name, file, methodName, httpMethod)
 	default:
-		log.Fatalf("unsupported param type %T of method %s", t, methodName)
+		logx.Fatalf("unsupported param type %T of method %s", t, methodName)
 	}
 }
 
@@ -64,11 +64,11 @@ func (g *Generator) handleStruct(paramType ast.Expr, paramTypeName string, name 
 	pkgPath := obj.Pkg().Path()
 	fullPath, err := getPkgDir(pkgPath)
 	if err != nil {
-		log.Fatalf("get pkg dir: %s", err)
+		logx.Fatalf("get pkg dir: %s", err)
 	}
 	fields, err := extractStructFields(fullPath, paramTypeName)
 	if err != nil {
-		log.Fatalf("extract struct fields: %s", err)
+		logx.Fatalf("extract struct fields: %s", err)
 	}
 	for _, f := range fields {
 		var key, value string
@@ -114,7 +114,7 @@ func (g *Generator) handleMapType(name *ast.Ident, methodName string, httpMethod
 
 func (g *Generator) setBodyParamName(methodName, paramName string) {
 	if _, ok := g.data.BodyParamMap[methodName]; ok {
-		log.Fatalf("ambiguous body binding of method %s", methodName)
+		logx.Fatalf("ambiguous body binding of method %s", methodName)
 	}
 	g.data.BodyParamMap[methodName] = paramName
 }

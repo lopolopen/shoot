@@ -1,6 +1,7 @@
 package shoot
 
 type CommonFlags struct {
+	CmdLine   string
 	Dir       string
 	Verbose   bool
 	Raw       bool

@@ -5,16 +5,16 @@ import (
 )
 
 type TmplData struct {
-	shoot.TmplDataBase
+	*shoot.TmplDataBase
 	NameList []string
 	Bitwise  bool
 	Json     bool
 	Text     bool
 }
 
-func NewTmplData() *TmplData {
+func NewTmplData(cmdline string) *TmplData {
 	return &TmplData{
-		TmplDataBase: *shoot.NewTmplDataBase(),
+		TmplDataBase: shoot.NewTmplDataBase(cmdline),
 	}
 }
 

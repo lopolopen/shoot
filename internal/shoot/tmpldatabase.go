@@ -1,18 +1,16 @@
 package shoot
 
 type TmplDataBase struct {
-	Cmd         string
+	CmdLine     string
 	PackageName string
 	TypeName    string
 }
 
-func NewTmplDataBase() *TmplDataBase {
-	d := &TmplDataBase{}
+func NewTmplDataBase(cmdline string) *TmplDataBase {
+	d := &TmplDataBase{
+		CmdLine: cmdline,
+	}
 	return d
-}
-
-func (d *TmplDataBase) SetCmd(cmd string) {
-	d.Cmd = cmd
 }
 
 func (d *TmplDataBase) SetTypeName(typeName string) {

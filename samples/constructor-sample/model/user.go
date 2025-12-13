@@ -1,6 +1,6 @@
 package model
 
-//go:generate go tool shoot new -getset -json -file=$GOFILE
+//go:generate go tool shoot new -exp -opt -getset -json -file=$GOFILE
 
 type User struct {
 	//shoot: get
@@ -17,4 +17,11 @@ type Book struct {
 	writers []string
 	Remarks string
 	owner   *User
+}
+
+type Address struct {
+	Province string
+	City     string
+	District string
+	Street   string
 }
