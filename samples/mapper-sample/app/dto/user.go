@@ -10,12 +10,13 @@ import (
 
 type User struct {
 	*mapper.Mapper
-	ID       uint
-	FullName string
-	Email    string
+	ID        uint          `json:"id"`
+	FullName  string        `json:"fullName"`
+	Email     string        `json:"email"`
+	Addresses []UserAddress `json:"addresses" map:"AddressList"`
 }
 
-func (u User) toModel(user *model.User) { //or writeModel
+func (u *User) toModel(user *model.User) { //or writeModel
 	parts := strings.Fields(u.FullName)
 	if len(parts) == 1 {
 		user.FirstName = parts[0]
@@ -32,3 +33,12 @@ func (u *User) fromModel(user model.User) { //or readModel
 // func (u *User) writeModel(user *model.User) {
 // 	//err: found more than one manual write method: writeModel
 // }
+
+type UserAddress struct {
+	ID        uint
+	City      string
+	Street    string
+	Room      string
+	Tag       string
+	IsDefault bool
+}

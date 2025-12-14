@@ -2,6 +2,7 @@ package mapper
 
 import (
 	"go/ast"
+	"go/types"
 	"path/filepath"
 	"strings"
 
@@ -10,7 +11,7 @@ import (
 )
 
 func (g *Generator) loadTypeMapperPkg(typeName string) string {
-	//todo:
+	//todo: recursive
 	var mappers string
 	for _, f := range g.Pkg().Syntax {
 		ast.Inspect(f, func(n ast.Node) bool {
@@ -133,9 +134,13 @@ func (g *Generator) parseMapper(mapperTypeName string) {
 }
 
 func (g *Generator) makeMismatch() {
-	g.data.SrcToDestFuncMap = make(map[string]string) //Fint -> IntToString
-	g.data.DestToSrcFuncMap = make(map[string]string) //Fint -> StringToInt
-	g.data.MismatchMap = map[string]string{}          //Fint -> FString
+	g.data.SrcToDestFuncMap = make(map[string]string)
+	g.data.DestToSrcFuncMap = make(map[string]string)
+	g.data.MismatchFuncMap = make(map[string]string)
+	g.data.MismatchSubMap = make(map[string]string)
+	g.data.SrcPtrSet = make(map[string]bool)
+	g.data.DestPtrSet = make(map[string]bool)
+	g.data.SrcSubTypeMap = make(map[string]string)
 
 	for _, f1 := range g.srcExpList {
 		if g.assignedSrcSet[f1.name] {
@@ -155,18 +160,52 @@ func (g *Generator) makeMismatch() {
 				continue
 			}
 
-			for _, fn := range g.mappingFuncList {
-				//in ToXxx, mapping func's param type is src filed type
-				if fn.param.String() == f1.typ.String() && fn.result.String() == f2.typ.String() {
-					g.data.SrcToDestFuncMap[f1.name] = fn.name
-					g.data.MismatchMap[f1.name] = f2.name
-				}
+			g.makeFuncMap(f1, f2)
+			g.makeSubMap(f1, f2)
+		}
+	}
+}
 
-				//in FromXxx, the opposite applies
-				if fn.param.String() == f2.typ.String() && fn.result.String() == f1.typ.String() {
-					g.data.DestToSrcFuncMap[f1.name] = fn.name
-					g.data.MismatchMap[f1.name] = f2.name
-				}
+func (g *Generator) makeFuncMap(f1, f2 Field) {
+	for _, fn := range g.mappingFuncList {
+		//in ToXxx, mapping func's param type is src filed type
+		if fn.param.String() == f1.typ.String() && fn.result.String() == f2.typ.String() {
+			g.data.SrcToDestFuncMap[f1.name] = fn.name
+			g.data.MismatchFuncMap[f1.name] = f2.name
+		}
+
+		//in FromXxx, the opposite applies
+		if fn.param.String() == f2.typ.String() && fn.result.String() == f1.typ.String() {
+			g.data.DestToSrcFuncMap[f1.name] = fn.name
+			g.data.MismatchFuncMap[f1.name] = f2.name
+		}
+	}
+}
+
+func (g *Generator) makeSubMap(sub1, sub2 Field) {
+	if _, ok := g.data.MismatchFuncMap[sub1.name]; ok {
+		return
+	}
+
+	typ1 := sub1.typ
+	typ2 := sub2.typ
+	if p1, ok := typ1.(*types.Pointer); ok {
+		g.data.SrcPtrSet[sub1.name] = true
+		typ1 = p1.Elem()
+	}
+	if p2, ok := typ2.(*types.Pointer); ok {
+		g.data.DestPtrSet[sub2.name] = true
+		typ2 = p2.Elem()
+	}
+
+	if n1, ok := typ1.(*types.Named); ok {
+		pkgpath1 := n1.Obj().Pkg().Path()
+		g.data.SrcSubTypeMap[sub1.name] = n1.Obj().Name()
+
+		if named2, ok := typ2.(*types.Named); ok {
+			pkgpath2 := named2.Obj().Pkg().Path()
+			if pkgpath1 == g.Pkg().PkgPath && pkgpath2 == g.destpkg.PkgPath {
+				g.data.MismatchSubMap[sub1.name] = sub2.name
 			}
 		}
 	}

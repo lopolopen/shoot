@@ -3,7 +3,6 @@ package mapper
 import (
 	"fmt"
 	"go/ast"
-	"log"
 	"strings"
 
 	"github.com/lopolopen/shoot/internal/tools/logx"
@@ -30,6 +29,10 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 					isWrite := isWriteMethod(fn.Name.Name, g.destpkg.Name)
 					isRead := !isWrite && isReadMethod(fn.Name.Name, g.destpkg.Name)
 
+					if !isWrite && !isRead {
+						continue
+					}
+
 					var recvTypeName string
 					recv := fn.Recv.List[0]
 					switch expr := recv.Type.(type) {
@@ -38,32 +41,27 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 							continue
 						}
 						recvTypeName = srcTypeName
-						if isRead {
-							logx.Fatalf("method (%s).%s must use a pointer receiver", recvTypeName, fn.Name.Name)
-						}
+						// if isRead {
+						// 	logx.Fatalf("method (%s).%s must use a pointer receiver", recvTypeName, fn.Name.Name)
+						// }
 					case *ast.StarExpr: //pointer receiver
 						if ident, ok := expr.X.(*ast.Ident); ok && ident.Name != srcTypeName {
 							continue
 						}
 						recvTypeName = "*" + srcTypeName
-						if isWrite {
-							log.Printf("💡 method (%s).%s should use a value receiver (recommended)", recvTypeName, fn.Name.Name)
-						}
+						// if isWrite {
+						// 	log.Printf("💡 method (%s).%s should use a value receiver (recommended)", recvTypeName, fn.Name.Name)
+						// }
 					}
 
-					if fn.Type.Params == nil {
-						continue
-					}
-					params := fn.Type.Params.List
-					if len(params) != 1 {
+					if fn.Type.Params == nil || len(fn.Type.Params.List) != 1 {
 						continue
 					}
 					if fn.Type.Results != nil && len(fn.Type.Results.List) != 0 {
-						//warn
 						continue
 					}
 
-					paramTypeExpr := params[0].Type
+					paramTypeExpr := fn.Type.Params.List[0].Type
 					switch expr := paramTypeExpr.(type) {
 					case *ast.Ident:
 						//todo:
@@ -77,7 +75,7 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 					case *ast.StarExpr: //pointer dest param
 						paramTypeExpr = expr.X
 						if isRead {
-							log.Printf("💡 method (%s).%s should use a value parameter (recommended)", recvTypeName, fn.Name.Name)
+							// log.Printf("💡 method (%s).%s should use a value parameter (recommended)", recvTypeName, fn.Name.Name)
 						}
 					}
 
@@ -94,7 +92,7 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 						} else {
 							logx.Fatalf("found more than one manual write method: (%s).%s", recvTypeName, fn.Name.Name)
 						}
-						names := findAssignedFields(fn, params[0].Names[0].Name)
+						names := findAssignedFields(fn, fn.Type.Params.List[0].Names[0].Name)
 						for _, n := range names {
 							g.assignedDestSet[n] = true
 						}
@@ -109,7 +107,6 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 							g.assignedSrcSet[n] = true
 						}
 					}
-
 				}
 			}
 

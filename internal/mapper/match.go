@@ -97,7 +97,7 @@ func (g *Generator) makeMatch() {
 			continue
 		}
 
-		if _, ok := g.data.MismatchMap[f1.name]; ok {
+		if _, ok := g.data.MismatchFuncMap[f1.name]; ok {
 			continue
 		}
 

@@ -8,20 +8,28 @@ import (
 
 type TmplData struct {
 	*shoot.TmplDataBase
-	DestTypeName          string
-	DestPkgName           string
-	QualifiedDestTypeName string
-	SrcFieldList          []string
-	ExactMatchMap         map[string]string
-	ConvMatchMap          map[string]string
-	SrcToDestTypeMap      map[string]string
-	DestToSrcTypeMap      map[string]string
-	MismatchMap           map[string]string
-	SrcToDestFuncMap      map[string]string
-	DestToSrcFuncMap      map[string]string
-	ReadMethodName        string
-	ReadParamPrefix       string
-	WriteMethodName       string
+	DestTypeName          string            //Order
+	DestPkgName           string            //model
+	QualifiedDestTypeName string            //model.Order
+	SrcFieldList          []string          //ID, Status ...
+	ExactMatchMap         map[string]string //ID -> ID
+
+	ConvMatchMap     map[string]string //Quantity -> Quantity
+	SrcToDestTypeMap map[string]string //Quantity -> int32
+	DestToSrcTypeMap map[string]string //Quantity -> int
+
+	MismatchFuncMap  map[string]string //Amount -> Amount
+	SrcToDestFuncMap map[string]string //Amount -> StringToDecimal
+	DestToSrcFuncMap map[string]string //Amount -> DecimalToString
+
+	MismatchSubMap map[string]string //Address -> Address
+	SrcPtrSet      map[string]bool   //Address -> true
+	DestPtrSet     map[string]bool   //Address -> false
+	SrcSubTypeMap  map[string]string //Address -> OrderAddress
+
+	ReadMethodName  string //fromModel
+	ReadParamPrefix string
+	WriteMethodName string //toModel
 }
 
 func NewTmplData(cmdline string) *TmplData {

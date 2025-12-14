@@ -25,6 +25,10 @@ func (g *Generator) checkUnassigned() {
 			continue
 		}
 
+		if _, ok := g.data.MismatchSubMap[f.name]; ok {
+			continue
+		}
+
 		src = append(src, f.name)
 	}
 	if len(src) > 0 {
@@ -50,7 +54,12 @@ outer:
 			}
 		}
 		for s := range g.data.SrcToDestFuncMap {
-			if f.name == g.data.MismatchMap[s] {
+			if f.name == g.data.MismatchFuncMap[s] {
+				continue outer
+			}
+		}
+		for _, d := range g.data.MismatchSubMap {
+			if f.name == d {
 				continue outer
 			}
 		}

@@ -12,6 +12,9 @@ func (o *Order) ToModel() *model.Order {
 	order_.Amount = o.StringToDecimal(o.Amount)
 	order_.Status = o.Status
 	order_.OrderTime = o.StringToTime(o.OrderingTime)
+	if o.Address != nil {
+		order_.Address = *o.Address.ToModel()
+	}
 	order_.Price = model.Price(o.Price)
 	order_.Price2 = o.Price2
 	order_.Value = int32(o.Value)
@@ -25,6 +28,7 @@ func (o *Order) FromModel(order_ *model.Order) *Order {
 	o.Amount = o.DecimalToString(order_.Amount)
 	o.Status = order_.Status
 	o.OrderingTime = o.TimeToString(order_.OrderTime)
+	o.Address = new(OrderAddress).FromModel(&order_.Address)
 	o.Price = decimal.Decimal(o.Price)
 	o.Price2 = order_.Price2
 	o.Value = int(o.Value)
@@ -73,3 +77,29 @@ func (u *User) FromModel(user_ *model.User) *User {
 
 // ShootMap exists solely to fulfill the MapShooter interface contract
 func (u User) ShootMap() { /*noop*/ }
+
+// ToModel converts receiver to type model.UserAddress
+func (u *UserAddress) ToModel() *model.UserAddress {
+	userAddress_ := new(model.UserAddress)
+	userAddress_.ID = u.ID
+	userAddress_.City = u.City
+	userAddress_.Street = u.Street
+	userAddress_.Room = u.Room
+	userAddress_.Tag = u.Tag
+	userAddress_.IsDefault = u.IsDefault
+	return userAddress_
+}
+
+// FromModel read from type model.UserAddress, then write back to receiver
+func (u *UserAddress) FromModel(userAddress_ *model.UserAddress) *UserAddress {
+	u.ID = userAddress_.ID
+	u.City = userAddress_.City
+	u.Street = userAddress_.Street
+	u.Room = userAddress_.Room
+	u.Tag = userAddress_.Tag
+	u.IsDefault = userAddress_.IsDefault
+	return u
+}
+
+// ShootMap exists solely to fulfill the MapShooter interface contract
+func (u UserAddress) ShootMap() { /*noop*/ }
