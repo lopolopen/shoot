@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"flag"
 	"go/ast"
-	"strings"
 
 	"github.com/lopolopen/shoot/internal/shoot"
 )
@@ -53,14 +52,13 @@ func (g *Generator) ParseFlags() {
 }
 
 func (g *Generator) MakeData(typeName string) any {
-	g.data = NewTmplData()
+	g.data = NewTmplData(g.CommonFlags().CmdLine)
 	g.makeNew(typeName)
 	g.makeOpt(typeName)
 	g.makeGetSet(typeName)
 	g.makeJson(typeName)
 	g.data.SetTypeName(typeName)
 	g.data.SetPackageName(g.Package().Name())
-	g.data.SetCmd(strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "))
 	return g.data
 }
 

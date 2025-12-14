@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-//go:generate go tool shoot map -path=../../domain/model -type=User
+//-go:generate go tool shoot map -path=../../domain/model -type=User
 
 type User struct {
 	*mapper.Mapper
@@ -30,5 +30,5 @@ func (u *User) fromModel(user model.User) { //or readModel
 }
 
 // func (u *User) writeModel(user *model.User) {
-// 	//err: found more than one custom write method: writeModel
+// 	//err: found more than one manual write method: writeModel
 // }

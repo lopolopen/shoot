@@ -5,7 +5,6 @@ import (
 	"flag"
 	"go/ast"
 	"go/types"
-	"strings"
 
 	"github.com/lopolopen/shoot/internal/shoot"
 )
@@ -23,7 +22,7 @@ type Generator struct {
 
 func New() *Generator {
 	g := &Generator{
-		GeneratorBase: shoot.NewGeneratorBase(SubCmd, tmplTxt), data: NewTmplData(),
+		GeneratorBase: shoot.NewGeneratorBase(SubCmd, tmplTxt),
 	}
 	return g
 }
@@ -35,10 +34,10 @@ func (g *Generator) ParseFlags() {
 }
 
 func (g *Generator) MakeData(typeName string) any {
+	g.data = NewTmplData(g.CommonFlags().CmdLine)
 	g.cookClient(typeName)
 	g.data.SetTypeName(typeName)
 	g.data.SetPackageName(g.Package().Name())
-	g.data.SetCmd(strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "))
 	return g.data
 }
 

@@ -2,15 +2,16 @@ package mapper
 
 import (
 	"go/ast"
-	"log"
 	"path/filepath"
 	"strings"
 
+	"github.com/lopolopen/shoot/internal/tools/logx"
 	"golang.org/x/tools/go/packages"
 )
 
 func (g *Generator) loadTypeMapperPkg(typeName string) string {
-	var mapperTypeName string
+	//todo:
+	var mappers string
 	for _, f := range g.Pkg().Syntax {
 		ast.Inspect(f, func(n ast.Node) bool {
 			if !g.testNode(typeName, n) {
@@ -22,6 +23,13 @@ func (g *Generator) loadTypeMapperPkg(typeName string) string {
 			for _, field := range stru.Fields.List {
 				if len(field.Names) > 0 {
 					continue
+				}
+
+				if field.Tag != nil {
+					tag := mapTag(field.Tag.Value)
+					if tag == "-" {
+						continue
+					}
 				}
 
 				//may be ident or selector
@@ -54,17 +62,15 @@ func (g *Generator) loadTypeMapperPkg(typeName string) string {
 				}
 				pkgs, err := loadPkgs(cfg, impPath)
 				if err != nil {
-					log.Fatalf("❌ %s", err)
+					logx.Fatalf("%s", err)
 				}
 				g.mapperpkg = pkgs[impPath]
-				mapperTypeName = sel.Sel.Name
+				mappers = sel.Sel.Name
 			}
-
 			return false
 		})
 	}
-	return mapperTypeName
-
+	return mappers
 }
 
 func (g *Generator) parseMapper(mapperTypeName string) {
@@ -126,7 +132,7 @@ func (g *Generator) parseMapper(mapperTypeName string) {
 	g.mappingFuncList = expFuncList
 }
 
-func (g *Generator) makeTypeMismatch() {
+func (g *Generator) makeMismatch() {
 	g.data.SrcToDestFuncMap = make(map[string]string) //Fint -> IntToString
 	g.data.DestToSrcFuncMap = make(map[string]string) //Fint -> StringToInt
 	g.data.MismatchMap = map[string]string{}          //Fint -> FString
@@ -148,8 +154,6 @@ func (g *Generator) makeTypeMismatch() {
 			if f1.typ.String() == f2.typ.String() {
 				continue
 			}
-
-			//TODO:  !!!!!!!!!优先级？？？？
 
 			for _, fn := range g.mappingFuncList {
 				//in ToXxx, mapping func's param type is src filed type

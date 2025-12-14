@@ -6,10 +6,9 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
-	"log"
-	"strings"
 
 	"github.com/lopolopen/shoot/internal/shoot"
+	"github.com/lopolopen/shoot/internal/tools/logx"
 )
 
 const SubCmd = "enum"
@@ -47,7 +46,7 @@ func (g *Generator) ParseFlags() {
 }
 
 func (g *Generator) MakeData(typeName string) any {
-	g.data = NewTmplData()
+	g.data = NewTmplData(g.CommonFlags().CmdLine)
 	g.makeStr(typeName)
 	g.makeBitwize()
 	g.makeJson()
@@ -59,7 +58,6 @@ func (g *Generator) MakeData(typeName string) any {
 
 	g.data.SetTypeName(typeName)
 	g.data.SetPackageName(g.Package().Name())
-	g.data.SetCmd(strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "))
 	return g.data
 }
 
@@ -100,7 +98,7 @@ func (g *Generator) ListTypes() []string {
 					}
 
 					if ts.Assign.IsValid() {
-						log.Printf("⚠️ alias type %s will be ignored", ts.Name.Name)
+						logx.Warnf("alias type %s will be ignored", ts.Name.Name)
 					} else {
 						typeNames = append(typeNames, ts.Name.Name)
 					}

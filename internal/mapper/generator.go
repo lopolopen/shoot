@@ -3,12 +3,14 @@ package mapper
 import (
 	_ "embed"
 	"flag"
+	"fmt"
 	"go/ast"
-	"log"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/lopolopen/shoot/internal/shoot"
+	"github.com/lopolopen/shoot/internal/tools/logx"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -49,12 +51,12 @@ func (g *Generator) ParseFlags() {
 	typMap := make(map[string]string)
 	if len(typNames) == 0 {
 		if *destNames != "" {
-			log.Fatal("❌ -dest only works when -type used")
+			logx.Fatal("-dest only works when -type used")
 		}
 	} else {
 		destTypNames := strings.Split(*destNames, ",")
 		if len(destTypNames) != len(typNames) {
-			log.Fatal("❌ -dest must align to -type")
+			logx.Fatal("-dest must align to -type")
 		}
 		for i, n := range typNames {
 			typMap[n] = destTypNames[i]
@@ -79,15 +81,48 @@ func (g *Generator) LoadPackage() {
 	}
 	pkgs, err := loadPkgs(cfg, cwd, destDir)
 	if err != nil {
-		log.Fatalf("❌ %s", err)
-	}
-	if len(pkgs) != 2 {
-		log.Fatalf("❌ error: %d packages found", len(pkgs))
+		logx.Fatalf("%s", err)
 	}
 
-	g.SetPkg(pkgs[cwd])
+	//todo: each path has only one pkg
+
+	pkg := pkgs[cwd]
+	if g.CommonFlags().FileName != "" {
+		var fs []*ast.File
+		for _, f := range pkg.Syntax {
+			filename := pkg.Fset.File(f.Pos()).Name()
+			if filepath.Base(filename) == g.CommonFlags().FileName {
+				fs = append(fs, f)
+				break
+			}
+		}
+		pkg.Syntax = fs
+	} else if shoot.Contains(g.CommonFlags().TypeNames, "*") {
+	end:
+		for i, f := range pkg.Syntax {
+			for _, cg := range f.Comments {
+				for _, c := range cg.List {
+					if !findCmdLine(c.Text, g.CommonFlags().CmdLine) {
+						continue
+					}
+					filename := filepath.Base(pkg.GoFiles[i])
+					g.AllInOne = filename
+					break end
+				}
+			}
+		}
+	}
+
+	g.SetPkg(pkg)
 	g.destpkg = pkgs[destDir]
 	g.GeneratorBase.LoadPackage()
+}
+
+func findCmdLine(doc string, cmdline string) bool {
+	pat := fmt.Sprintf("(?im)^//go:generate.*%s$", regexp.QuoteMeta(cmdline))
+	regAll := regexp.MustCompile(pat)
+	new := regAll.Match([]byte(doc))
+	return new
 }
 
 func loadPkgs(cfg *packages.Config, patterns ...string) (map[string]*packages.Package, error) {
@@ -127,7 +162,7 @@ func loadPkgs(cfg *packages.Config, patterns ...string) (map[string]*packages.Pa
 }
 
 func (g *Generator) MakeData(srcTypeName string) any {
-	g.data = NewTmplData()
+	g.data = NewTmplData(g.CommonFlags().CmdLine)
 
 	var destTypeName string
 	if g.flags.destTypes != nil {
@@ -142,13 +177,13 @@ func (g *Generator) MakeData(srcTypeName string) any {
 
 	g.parseSrcFields(srcTypeName)
 	g.parseDestFields(destTypeName)
-	g.parseCustomMapMethods(srcTypeName, destTypeName)
-	g.makeMatch()
+	g.parseManual(srcTypeName, destTypeName)
 	mapperTypeName := g.loadTypeMapperPkg(srcTypeName)
 	if mapperTypeName != "" {
 		g.parseMapper(mapperTypeName)
-		g.makeTypeMismatch()
+		g.makeMismatch() //priority: > makeMatch
 	}
+	g.makeMatch()
 
 	if g.destpkg.PkgPath == g.Pkg().PkgPath { //same package
 		g.data.QualifiedDestTypeName = g.data.DestTypeName
@@ -159,7 +194,6 @@ func (g *Generator) MakeData(srcTypeName string) any {
 
 	g.data.SetTypeName(srcTypeName)
 	g.data.SetPackageName(g.Pkg().Name)
-	g.data.SetCmd(strings.Join(append([]string{shoot.Cmd}, flag.Args()...), " "))
 
 	g.checkUnassigned()
 	return g.data

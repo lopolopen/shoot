@@ -43,9 +43,9 @@ type TmplData struct {
 	Short        bool
 }
 
-func NewTmplData() *TmplData {
+func NewTmplData(cmdline string) *TmplData {
 	return &TmplData{
-		TmplDataBase: shoot.NewTmplDataBase(),
+		TmplDataBase: shoot.NewTmplDataBase(cmdline),
 	}
 }
 

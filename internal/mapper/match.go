@@ -88,13 +88,16 @@ func (g *Generator) parseDestFields(destTypeName string) {
 
 func (g *Generator) makeMatch() {
 	g.data.ExactMatchMap = make(map[string]string)
-
 	g.data.ConvMatchMap = map[string]string{}
 	g.data.SrcToDestTypeMap = make(map[string]string)
 	g.data.DestToSrcTypeMap = make(map[string]string)
 
 	for _, f1 := range g.srcExpList {
 		if g.assignedSrcSet[f1.name] {
+			continue
+		}
+
+		if _, ok := g.data.MismatchMap[f1.name]; ok {
 			continue
 		}
 

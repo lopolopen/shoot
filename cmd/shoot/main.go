@@ -12,6 +12,7 @@ import (
 	"github.com/lopolopen/shoot/internal/mapper"
 	"github.com/lopolopen/shoot/internal/restclient"
 	"github.com/lopolopen/shoot/internal/shoot"
+	"github.com/lopolopen/shoot/internal/tools/logx"
 )
 
 var subCmdMap = map[string]string{
@@ -70,7 +71,7 @@ func main() {
 	}
 
 	if len(srcMap) == 0 {
-		log.Printf("⚠️ nothing generated: [%s]", strings.Join(flag.Args(), " "))
+		logx.Warnf("nothing generated: [%s]", strings.Join(flag.Args(), " "))
 		return
 	}
 
@@ -89,19 +90,19 @@ func notedownSrc(fileName string, src []byte) {
 		}
 	}()
 	if err != nil {
-		log.Fatalf("❌ creating temporary file for output: %s", err)
+		logx.Fatalf("creating temporary file for output: %s", err)
 	}
 	_, err = tmpFile.Write(src)
 	if err != nil {
 		tmpFile.Close()
 		os.Remove(tmpFile.Name())
-		log.Fatalf("❌ writing output: %s", err)
+		logx.Fatalf("writing output: %s", err)
 	}
 	tmpFile.Close()
 
 	// rename tmpfile to output file
 	err = os.Rename(tmpFile.Name(), fileName)
 	if err != nil {
-		log.Fatalf("❌ moving tempfile to output file: %s", err)
+		logx.Fatalf("moving tempfile to output file: %s", err)
 	}
 }

@@ -5,12 +5,12 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 
+	"github.com/lopolopen/shoot/internal/tools/logx"
 	"github.com/lopolopen/shoot/internal/transfer"
 	"golang.org/x/tools/go/packages"
 )
@@ -23,6 +23,7 @@ type GeneratorBase struct {
 	tmp         *template.Template
 	transfers   template.FuncMap
 	pkg         *packages.Package
+	AllInOne    string
 }
 
 func NewGeneratorBase(subCmd string, tmplTxt string) *GeneratorBase {
@@ -38,7 +39,7 @@ func (g *GeneratorBase) tmpl() *template.Template {
 	if g.tmp == nil {
 		tmp, err := template.New(g.subCmd).Funcs(g.transfers).Parse(g.tmplTxt)
 		if err != nil {
-			log.Fatalf("❌ parsing template: %s", err)
+			logx.Fatalf("parsing template: %s", err)
 		}
 		g.tmp = tmp
 	}
@@ -85,7 +86,7 @@ func (d *GeneratorBase) RegisterTransfer(key string, transfer any) {
 }
 
 func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
-	typeNames := sub.String("type", "", "comma-separated list of type names")
+	typeNames := sub.String("type", "*", "comma-separated list of type names")
 	fileName := sub.String("file", "", "the targe go file to generate, typical value: $GOFILE")
 	separate := sub.Bool("separate", false, "each type has its own go file")
 	s := sub.Bool("s", false, "each type has its own go file (alias for separate)")
@@ -94,8 +95,8 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 	raw := sub.Bool("raw", false, "raw source")
 	r := sub.Bool("r", false, "raw source (alias for raw)")
 
-	sub.Parse(flag.Args()[1:]) //e.g. enum -bit type=YourType ./testdata
-
+	cmdline := Shoot + " " + strings.Join(flag.Args(), " ") //e.g.: enum -bit type=YourType ./testdata
+	sub.Parse(flag.Args()[1:])
 	if *typeNames == "" && *fileName == "" {
 		sub.Usage()
 		os.Exit(2)
@@ -113,19 +114,20 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 
 	if *fileName != "" {
 		if !strings.HasSuffix(*fileName, ".go") {
-			log.Fatal("❌ file must be a go file")
+			logx.Fatal("file must be a go file")
 		}
 		fp := filepath.Join(dir, *fileName)
 		_, err := os.Stat(fp)
 		if !(err == nil || os.IsExist(err)) {
-			log.Fatalf("❌ file not exists: %s", fp)
+			logx.Fatalf("file not exists: %s", fp)
 		}
 	}
 
 	g.commonFlags = &CommonFlags{
+		CmdLine:   cmdline,
 		TypeNames: typNames,
 		FileName:  *fileName,
-		Separate:  *s || *separate || *fileName == "",
+		Separate:  *s || *separate,
 		Dir:       dir,
 		Verbose:   *v || *verbose,
 		Raw:       *r || *raw,
@@ -133,11 +135,15 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 }
 
 func (g *GeneratorBase) fileName(typeName string, pkgScope bool) string {
-	cmd := Cmd + g.subCmd
+	cmd := Shoot + g.subCmd
 	if pkgScope {
 		return fmt.Sprintf("%s.%s.go", cmd, typeName)
 	}
-	gofile := strings.TrimSuffix(g.commonFlags.FileName, ".go")
+	fileName := g.commonFlags.FileName
+	if fileName == "" {
+		fileName = g.AllInOne
+	}
+	gofile := strings.TrimSuffix(fileName, ".go")
 	if typeName == "" {
 		return fmt.Sprintf("%s.%s.go", gofile, cmd)
 	}
@@ -164,10 +170,10 @@ func (g *GeneratorBase) LoadPackage() {
 		}
 		pkgs, err := packages.Load(cfg, pat)
 		if err != nil {
-			log.Fatalf("❌ %s", err)
+			logx.Fatalf("%s", err)
 		}
 		if len(pkgs) != 1 {
-			log.Fatalf("❌ error: %d packages found", len(pkgs))
+			logx.Fatalf("error: %d packages found", len(pkgs))
 		}
 		g.SetPkg(pkgs[0])
 	}
@@ -204,13 +210,13 @@ func getGoFile(pkg *packages.Package, typeName string) string {
 
 func (g *GeneratorBase) ParsePackage(typeLister TypeLister) {
 	typeNames := g.commonFlags.TypeNames
-	if len(typeNames) > 0 {
+	if len(typeNames) > 0 && typeNames[0] != "*" {
 		for _, typName := range typeNames {
 			gofile := getGoFile(g._pkg.pkg, typName)
 			if g.commonFlags.FileName == "" {
 				g.commonFlags.FileName = gofile
 			} else if g.commonFlags.FileName != gofile {
-				log.Fatalf("❌ types are not in the same file")
+				logx.Fatalf("types are not in the same file")
 			}
 		}
 	} else {
@@ -220,10 +226,10 @@ func (g *GeneratorBase) ParsePackage(typeLister TypeLister) {
 
 func (g *GeneratorBase) Generate(dataMaker DataMaker) map[string][]byte {
 	if g._pkg == nil {
-		log.Fatal("❌ pkg is nil, may forget to call ParsePackage")
+		logx.Fatal("pkg is nil, may forget to call ParsePackage")
 	}
 	if g.pkg == nil {
-		log.Fatal("❌ pkg is nil, may forget to call ParsePackage")
+		logx.Fatal("pkg is nil, may forget to call ParsePackage")
 	}
 	srcMap := make(map[string][]byte)
 	var srcList [][]byte
@@ -245,7 +251,7 @@ func (g *GeneratorBase) Generate(dataMaker DataMaker) map[string][]byte {
 	if len(srcList) > 0 {
 		src, err := MergeSources(srcList...)
 		if err != nil {
-			log.Fatalf("❌ merge sources error: %s", err)
+			logx.Fatalf("merge sources error: %s", err)
 		}
 		if len(src) > 0 {
 			srcMap[g.fileName("", false)] = src
@@ -258,17 +264,17 @@ func (g *GeneratorBase) Generate(dataMaker DataMaker) map[string][]byte {
 func (g *GeneratorBase) generateOne(data any) []byte {
 	cflags := g.commonFlags
 	if cflags.Verbose {
-		log.Printf("🐞 debug:\n%+v", data)
+		logx.DebugJSONln("template data:\n", data)
 	}
 
 	var buff bytes.Buffer
 	err := g.tmpl().Execute(&buff, data)
 	if err != nil {
-		log.Fatalf("❌ executing template: %s", err)
+		logx.Fatalf("executing template: %s", err)
 	}
 	src := buff.Bytes()
 	if cflags.Verbose {
-		log.Printf("🐞 debug:\n%s", string(src))
+		logx.Debugln("raw source code:\n", string(src))
 	}
 
 	if cflags.Raw {
@@ -277,7 +283,7 @@ func (g *GeneratorBase) generateOne(data any) []byte {
 
 	src, err = FormatSrc(src)
 	if err != nil {
-		log.Fatalf("❌ format source: %s", err)
+		logx.Fatalf("format source: %s", err)
 	}
 	return src
 }

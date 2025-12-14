@@ -6,10 +6,11 @@ import (
 	"log"
 	"strings"
 
+	"github.com/lopolopen/shoot/internal/tools/logx"
 	"github.com/lopolopen/shoot/internal/transfer"
 )
 
-func (g *Generator) parseCustomMapMethods(srcTypeName, destTypeName string) []string {
+func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 	g.assignedSrcSet = make(map[string]bool)
 	g.assignedDestSet = make(map[string]bool)
 
@@ -38,7 +39,7 @@ func (g *Generator) parseCustomMapMethods(srcTypeName, destTypeName string) []st
 						}
 						recvTypeName = srcTypeName
 						if isRead {
-							log.Fatalf("❌ method (%s).%s must use a pointer receiver", recvTypeName, fn.Name.Name)
+							logx.Fatalf("method (%s).%s must use a pointer receiver", recvTypeName, fn.Name.Name)
 						}
 					case *ast.StarExpr: //pointer receiver
 						if ident, ok := expr.X.(*ast.Ident); ok && ident.Name != srcTypeName {
@@ -69,7 +70,7 @@ func (g *Generator) parseCustomMapMethods(srcTypeName, destTypeName string) []st
 					case *ast.SelectorExpr: //value dest param
 						paramTypeExpr = expr.Sel
 						if isWrite {
-							log.Fatalf("❌ method (%s).%s must has a pointer parameter", recvTypeName, fn.Name.Name)
+							logx.Fatalf("method (%s).%s must has a pointer parameter", recvTypeName, fn.Name.Name)
 						} else {
 							g.data.ReadParamPrefix = "*"
 						}
@@ -91,7 +92,7 @@ func (g *Generator) parseCustomMapMethods(srcTypeName, destTypeName string) []st
 						if g.data.WriteMethodName == "" {
 							g.data.WriteMethodName = fn.Name.Name
 						} else {
-							log.Fatalf("❌ found more than one custom write method: (%s).%s", recvTypeName, fn.Name.Name)
+							logx.Fatalf("found more than one manual write method: (%s).%s", recvTypeName, fn.Name.Name)
 						}
 						names := findAssignedFields(fn, params[0].Names[0].Name)
 						for _, n := range names {
@@ -101,7 +102,7 @@ func (g *Generator) parseCustomMapMethods(srcTypeName, destTypeName string) []st
 						if g.data.ReadMethodName == "" {
 							g.data.ReadMethodName = fn.Name.Name
 						} else {
-							log.Fatalf("❌ found more than one custom read method: (%s).%s", recvTypeName, fn.Name.Name)
+							logx.Fatalf("found more than one manual read method: (%s).%s", recvTypeName, fn.Name.Name)
 						}
 						names := findAssignedFields(fn, recv.Names[0].Name)
 						for _, n := range names {

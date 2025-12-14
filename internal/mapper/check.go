@@ -1,8 +1,9 @@
 package mapper
 
 import (
-	"log"
 	"strings"
+
+	"github.com/lopolopen/shoot/internal/tools/logx"
 )
 
 func (g *Generator) checkUnassigned() {
@@ -28,7 +29,7 @@ func (g *Generator) checkUnassigned() {
 	}
 	if len(src) > 0 {
 		names := strings.Join(src, ", ")
-		log.Printf("⚠️ these fields of %s are never assigned:\n\t%s", g.data.TypeName, names)
+		logx.Warnf("%s: these fields are never assigned:\n\t%s", g.data.TypeName, names)
 	}
 
 	var dest []string
@@ -58,6 +59,6 @@ outer:
 	}
 	if len(dest) > 0 {
 		names := strings.Join(dest, ", ")
-		log.Printf("⚠️ these fields of %s are never assigned:\n\t%s", g.data.QualifiedDestTypeName, names)
+		logx.Warnf("%s: these fields are never assigned:\n\t%s", g.data.QualifiedDestTypeName, names)
 	}
 }
