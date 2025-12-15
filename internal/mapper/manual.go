@@ -26,8 +26,8 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 						continue
 					}
 
-					isWrite := isWriteMethod(fn.Name.Name, g.destpkg.Name)
-					isRead := !isWrite && isReadMethod(fn.Name.Name, g.destpkg.Name)
+					isWrite := isWriteMethod(fn.Name.Name, withAlias(g.destpkg.Name, g.flags.alias))
+					isRead := !isWrite && isReadMethod(fn.Name.Name, withAlias(g.destpkg.Name, g.flags.alias))
 
 					if !isWrite && !isRead {
 						continue
@@ -116,14 +116,14 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 	return nil
 }
 
-func isWriteMethod(methodName string, destPkgName string) bool {
+func isWriteMethod(methodName string, destPkgKey string) bool {
 	keys := []string{"to", "write"}
 	for _, key := range keys {
-		if methodName == key+strings.ToLower(destPkgName) {
+		if methodName == key+strings.ToLower(destPkgKey) {
 			return true
 		}
 
-		if methodName == key+transfer.ToPascalCase(destPkgName) {
+		if methodName == key+transfer.ToPascalCase(destPkgKey) {
 			return true
 		}
 	}
@@ -162,4 +162,11 @@ func findAssignedFields(funcDecl *ast.FuncDecl, name string) []string {
 		return true
 	})
 	return fields
+}
+
+func withAlias(name, alias string) string {
+	if alias != "" {
+		return alias
+	}
+	return name
 }

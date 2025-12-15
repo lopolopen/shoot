@@ -10,6 +10,8 @@ type TmplData struct {
 	*shoot.TmplDataBase
 	DestTypeName          string            //Order
 	DestPkgName           string            //model
+	DestPkgAlias          string            //domain
+	DestPkgPath           string            //
 	QualifiedDestTypeName string            //model.Order
 	SrcFieldList          []string          //ID, Status ...
 	ExactMatchMap         map[string]string //ID -> ID
@@ -41,6 +43,7 @@ func NewTmplData(cmdline string) *TmplData {
 type Flags struct {
 	destDir   string
 	destTypes map[string]string
+	alias     string
 }
 
 type Field struct {

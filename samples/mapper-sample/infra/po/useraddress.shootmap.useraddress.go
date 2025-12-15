@@ -12,6 +12,8 @@ func (u *UserAddress) ToModel() *model.UserAddress {
 	userAddress_.Room = u.Room
 	userAddress_.Tag = u.Tag
 	userAddress_.IsDefault = u.IsDefault
+	userAddress_.OwnerID = u.UserID
+	u.writeModel(userAddress_)
 	return userAddress_
 }
 
@@ -22,6 +24,7 @@ func (u *UserAddress) FromModel(userAddress_ *model.UserAddress) *UserAddress {
 	u.Room = userAddress_.Room
 	u.Tag = userAddress_.Tag
 	u.IsDefault = userAddress_.IsDefault
+	u.UserID = userAddress_.OwnerID
 	return u
 }
 

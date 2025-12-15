@@ -1,6 +1,10 @@
 package po
 
-import "gorm.io/gorm"
+import (
+	"mappersample/domain/model"
+
+	"gorm.io/gorm"
+)
 
 //go:generate go tool shoot map -path=../../domain/model -type=UserAddress
 
@@ -11,5 +15,9 @@ type UserAddress struct {
 	Room      string `gorm:"size:64"`
 	Tag       string `gorm:"size:32"`
 	IsDefault bool   `gorm:"default:false"`
-	UserID    uint   `gorm:"index"`
+	UserID    uint   `gorm:"index" map:"OwnerID"`
+}
+
+func (po *UserAddress) writeModel(userAdd *model.UserAddress) {
+	userAdd.ID = po.ID
 }

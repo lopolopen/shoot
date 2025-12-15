@@ -1,6 +1,6 @@
 package model
 
-type User struct {
+type User struct { //Aggregate Root
 	ID          uint
 	FirstName   string
 	LastName    string

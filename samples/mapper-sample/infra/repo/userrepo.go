@@ -37,6 +37,6 @@ func (r *UserRepo) Get(ctx context.Context, id uint) (*model.User, error) {
 	}
 
 	userPO.AddressList = addPOs
-	user := userPO.ToModel()
+	user := userPO.ToDomain()
 	return user, nil
 }

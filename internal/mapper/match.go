@@ -116,16 +116,19 @@ func (g *Generator) makeMatch() {
 			} else if conv {
 				g.data.ConvMatchMap[f1.name] = f2.name
 				//in ToXxx, convert's type is desc type
-				g.data.SrcToDestTypeMap[f1.name] = qualifiedName(f2.typ)
+				g.data.SrcToDestTypeMap[f1.name] = qualifiedName(f2.typ, g.flags.alias)
 				//in FromXxx, the opposite applies
-				g.data.DestToSrcTypeMap[f2.name] = qualifiedName(f1.typ)
+				g.data.DestToSrcTypeMap[f2.name] = qualifiedName(f1.typ, g.flags.alias)
 			}
 		}
 	}
 }
 
-func qualifiedName(t types.Type) string {
+func qualifiedName(t types.Type, alias string) string {
 	qualifier := func(pkg *types.Package) string {
+		if alias != "" {
+			return alias
+		}
 		if pkg == nil {
 			return ""
 		}

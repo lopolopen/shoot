@@ -10,7 +10,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-//go:generate go tool shoot map -path=../../domain/model -type=Order
+//-go:generate go tool shoot map -path=../../domain/model -type=Order
 
 type Order struct {
 	*mapper.SQLMapper

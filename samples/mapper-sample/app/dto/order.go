@@ -8,22 +8,20 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-//-go:generate go tool shoot map -path=../../domain/model -file=$GOFILE
-
 type Order struct {
-	*mapper.Mapper                   //`map:"-"`
-	ID             string            `json:"id"`
-	Amount         string            `json:"amount"`
-	Status         enums.OrderStatus `json:"status"`
-	OrderingTime   string            `json:"orderingTime" map:"OrderTime"`
-	Address        *OrderAddress     `json:"address"`
-	Non            int               `map:"-"`
-	Price          decimal.Decimal
-	Price2         decimal.Decimal
-	Value          int
+	*mapper.Mapper
+	ID           string            `json:"id"`
+	Amount       string            `json:"amount"`
+	Status       enums.OrderStatus `json:"status"`
+	OrderingTime string            `json:"orderingTime" map:"OrderTime"`
+	Address      *OrderAddress     `json:"address"`
+	Non          int               `map:"-"`
+	Price        decimal.Decimal
+	Price2       decimal.Decimal
+	Value        int
 }
 
-func (o *Order) writeModel(dest *model.Order) {
+func (o *Order) writeDomain(dest *model.Order) {
 	dest.X = 0 //suppress warnings
 }
 

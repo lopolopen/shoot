@@ -44,6 +44,7 @@ func New() *Generator {
 func (g *Generator) ParseFlags() {
 	sub := flag.NewFlagSet(SubCmd, flag.ExitOnError)
 	path := sub.String("path", "", "destination package path to map to")
+	alias := sub.String("alias", "", "destination package alias")
 	destTypes := sub.String("to", "", "destination type names to map to (must align to -type)")
 	g.ParseCommonFlags(sub)
 
@@ -66,6 +67,7 @@ func (g *Generator) ParseFlags() {
 	g.flags = &Flags{
 		destDir:   *path,
 		destTypes: typMap,
+		alias:     *alias,
 	}
 }
 
@@ -185,12 +187,16 @@ func (g *Generator) MakeData(srcTypeName string) any {
 	}
 	g.makeMatch()
 
+	g.data.DestPkgName = g.destpkg.Name
+	g.data.DestPkgPath = g.destpkg.PkgPath
+	g.data.DestPkgAlias = g.flags.alias
 	if g.destpkg.PkgPath == g.Pkg().PkgPath { //same package
 		g.data.QualifiedDestTypeName = g.data.DestTypeName
+	} else if g.data.DestPkgAlias == "" {
+		g.data.QualifiedDestTypeName = g.data.DestPkgName + "." + g.data.DestTypeName
 	} else {
-		g.data.QualifiedDestTypeName = g.destpkg.Name + "." + g.data.DestTypeName
+		g.data.QualifiedDestTypeName = g.data.DestPkgAlias + "." + g.data.DestTypeName
 	}
-	g.data.DestPkgName = g.destpkg.Name
 
 	g.data.SetTypeName(srcTypeName)
 	g.data.SetPackageName(g.Pkg().Name)

@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-//-go:generate go tool shoot map -path=../../domain/model -type=User
-
 type User struct {
 	*mapper.Mapper
 	ID        uint          `json:"id"`
@@ -16,7 +14,7 @@ type User struct {
 	Addresses []UserAddress `json:"addresses" map:"AddressList"`
 }
 
-func (u *User) toModel(user *model.User) { //or writeModel
+func (u *User) toDomain(user *model.User) { //or writeModel
 	parts := strings.Fields(u.FullName)
 	if len(parts) == 1 {
 		user.FirstName = parts[0]
@@ -26,7 +24,7 @@ func (u *User) toModel(user *model.User) { //or writeModel
 	}
 }
 
-func (u *User) fromModel(user model.User) { //or readModel
+func (u *User) fromDomain(user model.User) { //or readModel
 	u.FullName = user.FirstName + " " + user.LastName
 }
 
