@@ -37,14 +37,33 @@ func ({{$src}} *{{.TypeName}}) {{$to}}() *{{.QualifiedDestTypeName}} {
 
     {{- $d := index $.MismatchSubMap $s -}}
     {{- if $d -}}
+    {{- $starS := index $.SrcPtrSet $s -}}
     {{- $starD := index $.DestPtrSet $d -}}
-    {{- if (index $.SrcPtrSet $s) -}}
+    {{- if $starS -}}
     if {{$src}}.{{$s}} != nil {
         {{$dest}}.{{$d}} = {{if not $starD}}*{{end}}{{$src}}.{{$s}}.{{$to}}()
     } {{"\n"}}
     {{- else -}}
     {{$dest}}.{{$d}} = {{if not $starD}}*{{end}}{{$src}}.{{$s}}.{{$to}}() {{"\n"}}
     {{- end -}}
+    {{- end -}}
+
+    {{- $d := index $.MismatchSubListMap $s -}}
+    {{- if $d -}}
+    {{- $starS := index $.SrcPtrSet $s -}}
+    {{- $starD := index $.DestPtrSet $d -}}
+    if {{$src}}.{{$s}} != nil {
+        {{$dest}}.{{$d}} = make([]{{if $starD}}*{{end}}{{index $.DestSubTypeMap $d}}, len({{$src}}.{{$s}}))
+        for _i, _x := range {{$src}}.{{$s}} {
+            {{- if (index $.SrcPtrSet $s) -}}
+            if {{$src}}.{{$s}} != nil {
+                {{$dest}}.{{$d}}[_i] = {{if not $starD}}*{{end}}_x.{{$to}}()
+            } {{"\n"}}
+            {{- else -}}
+            {{$dest}}.{{$d}}[_i] = {{if not $starD}}*{{end}}_x.{{$to}}() {{"\n"}}
+            {{- end -}}
+        }
+    } {{"\n"}}
     {{- end -}}
 
     {{- end -}} 
@@ -78,6 +97,24 @@ func ({{$src}} *{{.TypeName}}) {{$from}}({{$dest}} *{{.QualifiedDestTypeName}}) 
     {{- $starS := index $.SrcPtrSet $s -}}
     {{- $starD := index $.DestPtrSet $s -}}
     {{$src}}.{{$s}} = {{if not $starS}}*{{end}}new({{index $.SrcSubTypeMap $s}}).{{$from}}({{if not $starD}}&{{end}}{{$dest}}.{{$d}}) {{"\n"}}
+    {{- end -}}
+
+    {{- $d := index $.MismatchSubListMap $s -}}
+    {{- if $d -}}
+    {{- $starS := index $.SrcPtrSet $s -}}
+    {{- $starD := index $.DestPtrSet $d -}}
+    if {{$dest}}.{{$d}} != nil {
+        {{$src}}.{{$s}} = make([]{{if $starS}}*{{end}}{{index $.SrcSubTypeMap $d}}, len({{$dest}}.{{$d}}))
+        for _i, _x := range {{$dest}}.{{$d}} {
+            {{- if (index $.DestPtrSet $s) -}}
+            if {{$dest}}.{{$d}} != nil {
+                {{$src}}.{{$s}}[_i] = {{if not $starS}}*{{end}}_x.{{$from}}()
+            } {{"\n"}}
+            {{- else -}}
+            {{$src}}.{{$s}}[_i] = {{if not $starS}}*{{end}}new({{index $.SrcSubTypeMap $s}}).{{$from}}({{if not $starD}}&{{end}}_x) {{"\n"}}
+            {{- end -}}
+        }
+    } {{"\n"}}
     {{- end -}}
 
     {{- end -}}

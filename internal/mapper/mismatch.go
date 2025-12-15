@@ -141,6 +141,8 @@ func (g *Generator) makeMismatch() {
 	g.data.SrcPtrSet = make(map[string]bool)
 	g.data.DestPtrSet = make(map[string]bool)
 	g.data.SrcSubTypeMap = make(map[string]string)
+	g.data.DestSubTypeMap = make(map[string]string) //qualified
+	g.data.MismatchSubListMap = make(map[string]string)
 
 	for _, f1 := range g.srcExpList {
 		if g.assignedSrcSet[f1.name] {
@@ -162,6 +164,7 @@ func (g *Generator) makeMismatch() {
 
 			g.makeFuncMap(f1, f2)
 			g.makeSubMap(f1, f2)
+			g.makeSubListMap(f1, f2)
 		}
 	}
 }
@@ -189,23 +192,72 @@ func (g *Generator) makeSubMap(sub1, sub2 Field) {
 
 	typ1 := sub1.typ
 	typ2 := sub2.typ
-	if p1, ok := typ1.(*types.Pointer); ok {
+	if p, ok := typ1.(*types.Pointer); ok {
 		g.data.SrcPtrSet[sub1.name] = true
-		typ1 = p1.Elem()
+		typ1 = p.Elem()
+	} else {
+		return
 	}
-	if p2, ok := typ2.(*types.Pointer); ok {
+	if p, ok := typ2.(*types.Pointer); ok {
 		g.data.DestPtrSet[sub2.name] = true
-		typ2 = p2.Elem()
+		typ2 = p.Elem()
+	} else {
+		return
 	}
 
 	if n1, ok := typ1.(*types.Named); ok {
 		pkgpath1 := n1.Obj().Pkg().Path()
 		g.data.SrcSubTypeMap[sub1.name] = n1.Obj().Name()
 
-		if named2, ok := typ2.(*types.Named); ok {
-			pkgpath2 := named2.Obj().Pkg().Path()
+		if n2, ok := typ2.(*types.Named); ok {
+			pkgpath2 := n2.Obj().Pkg().Path()
+			g.data.DestSubTypeMap[sub2.name] = qualifiedTypeName(typ2, g.flags.alias)
+
 			if pkgpath1 == g.Pkg().PkgPath && pkgpath2 == g.destpkg.PkgPath {
 				g.data.MismatchSubMap[sub1.name] = sub2.name
+			}
+		}
+	}
+}
+
+func (g *Generator) makeSubListMap(subs1, subs2 Field) {
+	if _, ok := g.data.MismatchFuncMap[subs1.name]; ok {
+		return
+	}
+	if _, ok := g.data.MismatchSubMap[subs1.name]; ok {
+		return
+	}
+
+	var typ1, typ2 types.Type
+	if s, ok := subs1.typ.(*types.Slice); ok {
+		typ1 = s.Elem()
+		if p, ok := typ1.(*types.Pointer); ok {
+			g.data.SrcPtrSet[subs1.name] = true
+			typ1 = p.Elem()
+		}
+	} else {
+		return
+	}
+	if s, ok := subs2.typ.(*types.Slice); ok {
+		typ2 = s.Elem()
+		if p, ok := typ2.(*types.Pointer); ok {
+			g.data.DestPtrSet[subs2.name] = true
+			typ2 = p.Elem()
+		}
+	} else {
+		return
+	}
+
+	if n1, ok := typ1.(*types.Named); ok {
+		pkgpath1 := n1.Obj().Pkg().Path()
+		g.data.SrcSubTypeMap[subs1.name] = n1.Obj().Name()
+
+		if named2, ok := typ2.(*types.Named); ok {
+			pkgpath2 := named2.Obj().Pkg().Path()
+			g.data.DestSubTypeMap[subs1.name] = qualifiedTypeName(typ2, g.flags.alias)
+
+			if pkgpath1 == g.Pkg().PkgPath && pkgpath2 == g.destpkg.PkgPath {
+				g.data.MismatchSubListMap[subs1.name] = subs2.name
 			}
 		}
 	}

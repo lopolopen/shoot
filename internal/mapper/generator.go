@@ -190,13 +190,8 @@ func (g *Generator) MakeData(srcTypeName string) any {
 	g.data.DestPkgName = g.destpkg.Name
 	g.data.DestPkgPath = g.destpkg.PkgPath
 	g.data.DestPkgAlias = g.flags.alias
-	if g.destpkg.PkgPath == g.Pkg().PkgPath { //same package
-		g.data.QualifiedDestTypeName = g.data.DestTypeName
-	} else if g.data.DestPkgAlias == "" {
-		g.data.QualifiedDestTypeName = g.data.DestPkgName + "." + g.data.DestTypeName
-	} else {
-		g.data.QualifiedDestTypeName = g.data.DestPkgAlias + "." + g.data.DestTypeName
-	}
+	same := g.destpkg.PkgPath == g.Pkg().PkgPath
+	g.data.QualifiedDestTypeName = qualifiedName(g.data.DestPkgName, g.data.DestPkgAlias, g.data.DestTypeName, same)
 
 	g.data.SetTypeName(srcTypeName)
 	g.data.SetPackageName(g.Pkg().Name)
@@ -236,4 +231,14 @@ func (g *Generator) testNode(typeName string, node ast.Node) bool {
 		return false
 	}
 	return true
+}
+
+func qualifiedName(pkg string, pkgAlias string, name string, current bool) string {
+	if current {
+		return name
+	}
+	if pkgAlias != "" {
+		pkg = pkgAlias
+	}
+	return fmt.Sprintf("%s.%s", pkg, name)
 }

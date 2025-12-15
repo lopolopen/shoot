@@ -12,8 +12,8 @@ type TmplData struct {
 	DestPkgName           string            //model
 	DestPkgAlias          string            //domain
 	DestPkgPath           string            //
-	QualifiedDestTypeName string            //model.Order
-	SrcFieldList          []string          //ID, Status ...
+	QualifiedDestTypeName string            //domain.Order
+	SrcFieldList          []string          //[ID, Status, ...]
 	ExactMatchMap         map[string]string //ID -> ID
 
 	ConvMatchMap     map[string]string //Quantity -> Quantity
@@ -28,6 +28,9 @@ type TmplData struct {
 	SrcPtrSet      map[string]bool   //Address -> true
 	DestPtrSet     map[string]bool   //Address -> false
 	SrcSubTypeMap  map[string]string //Address -> OrderAddress
+	DestSubTypeMap map[string]string //Address -> domain.OrderAddress
+
+	MismatchSubListMap map[string]string //AddrList -> AddrList
 
 	ReadMethodName  string //fromModel
 	ReadParamPrefix string

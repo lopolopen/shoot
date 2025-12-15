@@ -10,8 +10,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-//-go:generate go tool shoot map -path=../../domain/model -type=Order
-
 type Order struct {
 	*mapper.SQLMapper
 	ID        string
@@ -24,7 +22,7 @@ type Order struct {
 	Room      string `map:"Addres."` //todo:
 }
 
-func (o *Order) writeModel(order *model.Order) {
+func (o *Order) writeDomain(order *model.Order) {
 	order.X = 0
 	order.Price = model.Price{}
 	order.Price2 = decimal.Zero

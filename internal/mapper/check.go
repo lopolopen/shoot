@@ -12,23 +12,21 @@ func (g *Generator) checkUnassigned() {
 		if g.assignedSrcSet[f.name] {
 			continue
 		}
-
 		if _, ok := g.data.ExactMatchMap[f.name]; ok {
 			continue
 		}
-
 		if _, ok := g.data.DestToSrcTypeMap[f.name]; ok {
 			continue
 		}
-
 		if _, ok := g.data.DestToSrcFuncMap[f.name]; ok {
 			continue
 		}
-
 		if _, ok := g.data.MismatchSubMap[f.name]; ok {
 			continue
 		}
-
+		if _, ok := g.data.MismatchSubListMap[f.name]; ok {
+			continue
+		}
 		src = append(src, f.name)
 	}
 	if len(src) > 0 {
@@ -42,7 +40,6 @@ outer:
 		if g.assignedDestSet[f.name] {
 			continue
 		}
-
 		for _, d := range g.data.ExactMatchMap {
 			if f.name == d {
 				continue outer
@@ -63,7 +60,11 @@ outer:
 				continue outer
 			}
 		}
-
+		for _, d := range g.data.MismatchSubListMap {
+			if f.name == d {
+				continue outer
+			}
+		}
 		dest = append(dest, f.name)
 	}
 	if len(dest) > 0 {

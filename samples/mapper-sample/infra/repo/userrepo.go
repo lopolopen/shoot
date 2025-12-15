@@ -28,15 +28,15 @@ func (r *UserRepo) Get(ctx context.Context, id uint) (*model.User, error) {
 		return nil, err
 	}
 
-	var addPOs []po.UserAddress
+	var addrPOs []*po.UserAddress
 	err = r.db.WithContext(ctx).
 		Where("user_id = ?", id).
-		Scan(&addPOs).Error
+		Scan(&addrPOs).Error
 	if err != nil {
 		return nil, err
 	}
 
-	userPO.AddressList = addPOs
+	userPO.AddressList = addrPOs
 	user := userPO.ToDomain()
 	return user, nil
 }

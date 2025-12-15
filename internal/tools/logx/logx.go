@@ -2,13 +2,12 @@ package logx
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
 func Fatal(v ...any) {
-	s := fmt.Sprint(v...)
-	log.Fatalf("❌ %s", s)
+	xs := append([]any{"❌"}, v...)
+	log.Fatal(xs...)
 }
 
 func Fatalf(format string, v ...any) {
@@ -16,8 +15,8 @@ func Fatalf(format string, v ...any) {
 }
 
 func Warn(v ...any) {
-	s := fmt.Sprint(v...)
-	log.Printf("⚠️ %s", s)
+	xs := append([]any{"⚠️"}, v...)
+	log.Print(xs...)
 }
 
 func Warnf(format string, v ...any) {
@@ -25,17 +24,17 @@ func Warnf(format string, v ...any) {
 }
 
 func Pinln(v ...any) {
-	s := fmt.Sprint(v...)
-	log.Printf("📌 %s\n", s)
+	xs := append([]any{"📌"}, v...)
+	log.Println(xs...)
 }
 
 func Debugln(v ...any) {
-	s := fmt.Sprint(v...)
-	log.Printf("🐛 %s\n", s)
+	xs := append([]any{"🐛"}, v...)
+	log.Println(xs...)
 }
 
 func DebugJSONln(v ...any) {
-	var xs []any
+	xs := []any{"🐛"}
 	for _, x := range v {
 		str, ok := x.(string)
 		if ok {
@@ -45,6 +44,5 @@ func DebugJSONln(v ...any) {
 		j, _ := json.MarshalIndent(x, "", "  ")
 		xs = append(xs, string(j))
 	}
-	s := fmt.Sprint(xs...)
-	log.Printf("🐛 %s\n", s)
+	log.Println(xs...)
 }
