@@ -87,9 +87,9 @@ func (d *GeneratorBase) RegisterTransfer(key string, transfer any) {
 
 func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 	typeNames := sub.String("type", "*", "comma-separated list of type names")
-	fileName := sub.String("file", "", "the targe go file to generate, typical value: $GOFILE")
+	filename := sub.String("file", "", "the targe go file to generate, typical value: $GOFILE")
 	separate := sub.Bool("separate", false, "each type has its own go file")
-	s := sub.Bool("s", false, "each type has its own go file (alias for separate)")
+	sep := sub.Bool("sep", false, "each type has its own go file (alias for separate)")
 	verbose := sub.Bool("verbose", false, "verbose output")
 	v := sub.Bool("v", false, "verbose output (alias for verbose)")
 	raw := sub.Bool("raw", false, "raw source")
@@ -97,14 +97,19 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 
 	cmdline := Shoot + " " + strings.Join(flag.Args(), " ") //e.g.: enum -bit type=YourType ./testdata
 	sub.Parse(flag.Args()[1:])
-	if *typeNames == "" && *fileName == "" {
+	if *typeNames == "" && *filename == "" {
 		sub.Usage()
 		os.Exit(2)
 	}
 
-	var typNames []string
+	var types []string
 	if *typeNames != "" {
-		typNames = strings.Split(*typeNames, ",")
+		types = strings.Split(*typeNames, ",")
+	}
+
+	sep_ := *sep || *separate
+	if *typeNames != "*" && *filename == "" { //basic case: -type=Order,Address
+		sep_ = true
 	}
 
 	dir := sub.Arg(0) //e.g. ./testdata
@@ -112,11 +117,11 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 		dir = "."
 	}
 
-	if *fileName != "" {
-		if !strings.HasSuffix(*fileName, ".go") {
+	if *filename != "" {
+		if !strings.HasSuffix(*filename, ".go") {
 			logx.Fatal("file must be a go file")
 		}
-		fp := filepath.Join(dir, *fileName)
+		fp := filepath.Join(dir, *filename)
 		_, err := os.Stat(fp)
 		if !(err == nil || os.IsExist(err)) {
 			logx.Fatalf("file not exists: %s", fp)
@@ -125,9 +130,9 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 
 	g.commonFlags = &CommonFlags{
 		CmdLine:   cmdline,
-		TypeNames: typNames,
-		FileName:  *fileName,
-		Separate:  *s || *separate,
+		TypeNames: types,
+		FileName:  *filename,
+		Separate:  sep_,
 		Dir:       dir,
 		Verbose:   *v || *verbose,
 		Raw:       *r || *raw,

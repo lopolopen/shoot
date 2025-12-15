@@ -4,21 +4,22 @@ package po
 
 import "mappersample/domain/model"
 
-// FromModel converts from type model.User to type User
-func (u *User) FromModel(user_ *model.User) *User {
-	return u
-}
-
-// ToModel converts receiver type to type model.User
+// ToModel converts receiver to type model.User
 func (u *User) ToModel() *model.User {
-	user_ := &model.User{}
-	user_.ID = u.ID
+	user_ := new(model.User)
 	user_.FirstName = u.FirstName
 	user_.LastName = u.LastName
 	user_.Email = u.Email
-	user_.AddressList = make([]model.UserAddress, len(u.AddressList)) //todo
-	for i, a := range u.AddressList {
-		user_.AddressList[i] = *a.ToModel()
-	}
 	return user_
 }
+
+// FromModel read from type model.User, then write back to receiver
+func (u *User) FromModel(user_ *model.User) *User {
+	u.FirstName = user_.FirstName
+	u.LastName = user_.LastName
+	u.Email = user_.Email
+	return u
+}
+
+// ShootMap exists solely to fulfill the MapShooter interface contract
+func (u User) ShootMap() { /*noop*/ }

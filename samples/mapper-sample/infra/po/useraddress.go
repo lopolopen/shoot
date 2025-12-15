@@ -2,7 +2,7 @@ package po
 
 import "gorm.io/gorm"
 
-//-go:generate go tool shoot map -path=../../domain/model -type=UserAddress
+//go:generate go tool shoot map -path=../../domain/model -type=UserAddress
 
 type UserAddress struct {
 	gorm.Model

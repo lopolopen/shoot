@@ -4,13 +4,26 @@ package po
 
 import "mappersample/domain/model"
 
-// FromModel converts from type model.UserAddress to type UserAddress
+// ToModel converts receiver to type model.UserAddress
+func (u *UserAddress) ToModel() *model.UserAddress {
+	userAddress_ := new(model.UserAddress)
+	userAddress_.City = u.City
+	userAddress_.Street = u.Street
+	userAddress_.Room = u.Room
+	userAddress_.Tag = u.Tag
+	userAddress_.IsDefault = u.IsDefault
+	return userAddress_
+}
+
+// FromModel read from type model.UserAddress, then write back to receiver
 func (u *UserAddress) FromModel(userAddress_ *model.UserAddress) *UserAddress {
+	u.City = userAddress_.City
+	u.Street = userAddress_.Street
+	u.Room = userAddress_.Room
+	u.Tag = userAddress_.Tag
+	u.IsDefault = userAddress_.IsDefault
 	return u
 }
 
-// ToModel converts receiver type to type model.UserAddress
-func (u *UserAddress) ToModel() *model.UserAddress {
-	userAddress_ := &model.UserAddress{}
-	return userAddress_
-}
+// ShootMap exists solely to fulfill the MapShooter interface contract
+func (u UserAddress) ShootMap() { /*noop*/ }

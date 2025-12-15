@@ -44,19 +44,19 @@ func New() *Generator {
 func (g *Generator) ParseFlags() {
 	sub := flag.NewFlagSet(SubCmd, flag.ExitOnError)
 	path := sub.String("path", "", "destination package path to map to")
-	destNames := sub.String("dest", "", "destination type names to map to (must align to -type)")
+	destTypes := sub.String("to", "", "destination type names to map to (must align to -type)")
 	g.ParseCommonFlags(sub)
 
 	typNames := g.CommonFlags().TypeNames
 	typMap := make(map[string]string)
 	if len(typNames) == 0 {
-		if *destNames != "" {
-			logx.Fatal("-dest only works when -type used")
+		if *destTypes != "" {
+			logx.Fatal("-to only works when -type used")
 		}
 	} else {
-		destTypNames := strings.Split(*destNames, ",")
+		destTypNames := strings.Split(*destTypes, ",")
 		if len(destTypNames) != len(typNames) {
-			logx.Fatal("-dest must align to -type")
+			logx.Fatal("-to list must align to -type list")
 		}
 		for i, n := range typNames {
 			typMap[n] = destTypNames[i]

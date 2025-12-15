@@ -4,20 +4,24 @@ package po
 
 import "mappersample/domain/model"
 
-// ToModel converts receiver type to type model.Order
+// ToModel converts receiver to type model.Order
 func (o *Order) ToModel() *model.Order {
 	order_ := new(model.Order)
 	order_.ID = o.ID
 	order_.Amount = o.Amount
 	order_.Status = o.Status
+	order_.OrderTime = o.OrderTime
+	o.writeModel(order_)
 	return order_
 }
 
-// FromModel converts from type model.Order to receiver type
+// FromModel read from type model.Order, then write back to receiver
 func (o *Order) FromModel(order_ *model.Order) *Order {
 	o.ID = order_.ID
 	o.Amount = order_.Amount
 	o.Status = order_.Status
+	o.OrderTime = order_.OrderTime
+	o.NullTime = o.TimePtrToNullTime(order_.NullTime)
 	return o
 }
 
