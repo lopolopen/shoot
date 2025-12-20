@@ -22,16 +22,20 @@ var tmplTxt string
 // Generator holds the state of the analysis.
 type Generator struct {
 	*shoot.GeneratorBase
-	flags           *Flags
-	data            *TmplData
-	destpkg         *packages.Package
-	mapperpkg       *packages.Package
-	srcExpList      []Field
-	destExpList     []Field
-	mappingFuncList []Func
-	assignedDestSet map[string]bool
-	assignedSrcSet  map[string]bool
-	tagMap          map[string]string
+	flags              *Flags
+	data               *TmplData
+	destPkg            *packages.Package
+	mapperpkg          *packages.Package
+	exportedFields     []Field
+	destExportedFields []Field
+	ptrTypeMap         map[string]string
+	destPtrTypeMap     map[string]string
+	readPathsMap       map[string][]string
+	destReadPathsMap   map[string][]string
+	mappingFuncList    []Func
+	assignedDestSet    map[string]bool
+	assignedSrcSet     map[string]bool
+	tagMap             map[string]string
 }
 
 func New() *Generator {
@@ -56,11 +60,17 @@ func (g *Generator) ParseFlags() {
 		}
 	} else {
 		destTypNames := strings.Split(*destTypes, ",")
-		if len(destTypNames) != len(typNames) {
+		if *destTypes != "" && len(destTypNames) != len(typNames) {
 			logx.Fatal("-to list must align to -type list")
 		}
-		for i, n := range typNames {
-			typMap[n] = destTypNames[i]
+		if *destTypes == "" {
+			for i, n := range typNames {
+				typMap[n] = typNames[i]
+			}
+		} else {
+			for i, n := range typNames {
+				typMap[n] = destTypNames[i]
+			}
 		}
 	}
 
@@ -116,7 +126,7 @@ func (g *Generator) LoadPackage() {
 	}
 
 	g.SetPkg(pkg)
-	g.destpkg = pkgs[destDir]
+	g.destPkg = pkgs[destDir]
 	g.GeneratorBase.LoadPackage()
 }
 
@@ -178,7 +188,10 @@ func (g *Generator) MakeData(srcTypeName string) any {
 	g.data.DestTypeName = destTypeName
 
 	g.parseSrcFields(srcTypeName)
-	g.parseDestFields(destTypeName)
+	destExists := g.parseDestFields(destTypeName)
+	if !destExists {
+		return nil
+	}
 	g.parseManual(srcTypeName, destTypeName)
 	mapperTypeName := g.loadTypeMapperPkg(srcTypeName)
 	if mapperTypeName != "" {
@@ -186,17 +199,18 @@ func (g *Generator) MakeData(srcTypeName string) any {
 		g.makeMismatch() //priority: > makeMatch
 	}
 	g.makeMatch()
+	g.makePtrPath()
 
-	g.data.DestPkgName = g.destpkg.Name
-	g.data.DestPkgPath = g.destpkg.PkgPath
+	g.data.DestPkgName = g.destPkg.Name
+	g.data.DestPkgPath = g.destPkg.PkgPath
 	g.data.DestPkgAlias = g.flags.alias
-	same := g.destpkg.PkgPath == g.Pkg().PkgPath
+	same := g.destPkg.PkgPath == g.Pkg().PkgPath
 	g.data.QualifiedDestTypeName = qualifiedName(g.data.DestPkgName, g.data.DestPkgAlias, g.data.DestTypeName, same)
 
 	g.data.SetTypeName(srcTypeName)
 	g.data.SetPackageName(g.Pkg().Name)
 
-	g.checkUnassigned()
+	g.makeReadWriteCheck()
 	return g.data
 }
 
@@ -216,25 +230,30 @@ func (g *Generator) ListTypes() []string {
 	return typeNames
 }
 
-func (g *Generator) testNode(typeName string, node ast.Node) bool {
+func (g *Generator) testNode(srcType string, node ast.Node) bool {
 	ts, ok := node.(*ast.TypeSpec)
 	if !ok {
 		return false
 	}
 
-	if typeName != "" && ts.Name.Name != typeName {
+	if srcType != "" && ts.Name.Name != srcType {
 		return false
 	}
 
-	_, ok = ts.Type.(*ast.StructType)
+	_, ok = ts.Type.(*ast.StructType) //empty struct is ok
 	if !ok {
 		return false
 	}
+
+	if srcType == "" && !ast.IsExported(ts.Name.Name) {
+		return false
+	}
+
 	return true
 }
 
-func qualifiedName(pkg string, pkgAlias string, name string, current bool) string {
-	if current {
+func qualifiedName(pkg string, pkgAlias string, name string, same bool) string {
+	if same {
 		return name
 	}
 	if pkgAlias != "" {

@@ -6,6 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
+//-go:generate go tool shoot map -path=../../domain/model -alias=domain -type=UserAddress
+
 type UserAddress struct {
 	gorm.Model
 	City      string `gorm:"size:64"`

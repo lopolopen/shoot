@@ -26,8 +26,8 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 						continue
 					}
 
-					isWrite := isWriteMethod(fn.Name.Name, withAlias(g.destpkg.Name, g.flags.alias))
-					isRead := !isWrite && isReadMethod(fn.Name.Name, withAlias(g.destpkg.Name, g.flags.alias))
+					isWrite := isWriteMethod(fn.Name.Name, withAlias(g.destPkg.Name, g.flags.alias))
+					isRead := !isWrite && isReadMethod(fn.Name.Name, withAlias(g.destPkg.Name, g.flags.alias))
 
 					if !isWrite && !isRead {
 						continue
@@ -80,7 +80,7 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 					}
 
 					//checking param type needs full type name
-					destFullName := fmt.Sprintf("%s.%s", g.destpkg.PkgPath, destTypeName)
+					destFullName := fmt.Sprintf("%s.%s", g.destPkg.PkgPath, destTypeName)
 					paramType := pkg.TypesInfo.TypeOf(paramTypeExpr)
 					if paramType.String() != destFullName {
 						continue
@@ -92,7 +92,7 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 						} else {
 							logx.Fatalf("found more than one manual write method: (%s).%s", recvTypeName, fn.Name.Name)
 						}
-						names := findAssignedFields(fn, fn.Type.Params.List[0].Names[0].Name)
+						names := findAssignedFieldPaths(fn, fn.Type.Params.List[0].Names[0].Name)
 						for _, n := range names {
 							g.assignedDestSet[n] = true
 						}
@@ -102,7 +102,7 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 						} else {
 							logx.Fatalf("found more than one manual read method: (%s).%s", recvTypeName, fn.Name.Name)
 						}
-						names := findAssignedFields(fn, recv.Names[0].Name)
+						names := findAssignedFieldPaths(fn, recv.Names[0].Name)
 						for _, n := range names {
 							g.assignedSrcSet[n] = true
 						}
@@ -144,24 +144,42 @@ func isReadMethod(methodName string, destPkgName string) bool {
 	return false
 }
 
-func findAssignedFields(funcDecl *ast.FuncDecl, name string) []string {
-	//todo: recursive
-	var fields []string
+func findAssignedFieldPaths(funcDecl *ast.FuncDecl, v string) []string {
+	var fieldPath []string
 	ast.Inspect(funcDecl.Body, func(n ast.Node) bool {
 		assign, ok := n.(*ast.AssignStmt)
 		if !ok {
 			return true
 		}
 		for _, lhs := range assign.Lhs {
-			if sel, ok := lhs.(*ast.SelectorExpr); ok {
-				if ident, ok := sel.X.(*ast.Ident); ok && ident.Name == name {
-					fields = append(fields, sel.Sel.Name)
-				}
+			path := findPath(lhs, v)
+			if path != "" {
+				fieldPath = append(fieldPath, path)
 			}
 		}
 		return true
 	})
-	return fields
+	return fieldPath
+}
+
+func findPath(x ast.Expr, v string) string {
+	var path string
+	for {
+		sel, ok := x.(*ast.SelectorExpr)
+		if !ok {
+			break
+		}
+		path = sel.Sel.Name + "." + path
+		x = sel.X
+	}
+	if path == "" {
+		return ""
+	}
+	i, ok := x.(*ast.Ident)
+	if !ok || i.Name != v {
+		return ""
+	}
+	return path[:len(path)-1]
 }
 
 func withAlias(name, alias string) string {
