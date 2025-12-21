@@ -15,16 +15,23 @@ func Test_matchType(t *testing.T) {
 		want2 bool
 	}{
 		{
-			name:  "same1",
+			name:  "identical 1",
 			type1: types.Typ[types.Int],
 			type2: types.Typ[types.Int],
 			want:  true,
 			want2: true,
 		},
 		{
-			name:  "same2",
+			name:  "convertible 1",
 			type1: types.Typ[types.Int],
 			type2: types.Typ[types.Int32],
+			want:  false,
+			want2: true,
+		},
+		{
+			name:  "convertible 2",
+			type1: types.Typ[types.Int64],
+			type2: types.Typ[types.String],
 			want:  false,
 			want2: true,
 		},

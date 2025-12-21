@@ -6,19 +6,4 @@ type User struct { //Aggregate Root
 	LastName    string
 	Email       string
 	AddressList []*UserAddress
-	*Model1
-}
-
-type Model1 struct {
-	A int
-	Model2
-}
-
-type Model2 struct {
-	B int
-	*Model3
-}
-
-type Model3 struct {
-	C int
 }

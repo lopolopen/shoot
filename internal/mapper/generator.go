@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/types"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -28,14 +29,18 @@ type Generator struct {
 	mapperpkg          *packages.Package
 	exportedFields     []Field
 	destExportedFields []Field
-	ptrTypeMap         map[string]string
+	srcPtrTypeMap      map[string]string
 	destPtrTypeMap     map[string]string
-	readPathsMap       map[string][]string
-	destReadPathsMap   map[string][]string
+	srcPathsMap        map[string][]string
+	destPathsMap       map[string][]string
 	mappingFuncList    []Func
-	assignedDestSet    map[string]bool
-	assignedSrcSet     map[string]bool
-	tagMap             map[string]string
+
+	writeSrcSet  map[string]bool
+	writeDestSet map[string]bool
+	readSrcMap   map[string]string
+	writeSrcMap  map[string]string
+
+	tagMap map[string]string
 }
 
 func New() *Generator {
@@ -43,6 +48,22 @@ func New() *Generator {
 		GeneratorBase: shoot.NewGeneratorBase(SubCmd, tmplTxt),
 	}
 	return g
+}
+
+func (g *Generator) qualifier(pkg *types.Package) string {
+	if pkg == nil {
+		return ""
+	}
+	if pkg.Path() == g.Pkg().PkgPath {
+		return ""
+	}
+	if pkg.Path() == g.destPkg.PkgPath {
+		if g.flags.alias != "" {
+			return g.flags.alias
+		}
+		return pkg.Name()
+	}
+	return pkg.Name()
 }
 
 func (g *Generator) ParseFlags() {
@@ -196,10 +217,9 @@ func (g *Generator) MakeData(srcTypeName string) any {
 	mapperTypeName := g.loadTypeMapperPkg(srcTypeName)
 	if mapperTypeName != "" {
 		g.parseMapper(mapperTypeName)
-		g.makeMismatch() //priority: > makeMatch
+		g.makeMismatch() //priority: makeMismatch > makeMatch
 	}
 	g.makeMatch()
-	g.makePtrPath()
 
 	g.data.DestPkgName = g.destPkg.Name
 	g.data.DestPkgPath = g.destPkg.PkgPath
@@ -260,4 +280,12 @@ func qualifiedName(pkg string, pkgAlias string, name string, same bool) string {
 		pkg = pkgAlias
 	}
 	return fmt.Sprintf("%s.%s", pkg, name)
+}
+
+func (g *Generator) readDestMap() map[string]string {
+	return g.writeSrcMap
+}
+
+func (g *Generator) writeDestMap() map[string]string {
+	return g.readSrcMap
 }

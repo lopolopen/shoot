@@ -6,10 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-//-go:generate go tool shoot map -path=../../domain/model -alias=domain -type=UserAddress
-
 type UserAddress struct {
-	gorm.Model
+	*gorm.Model
 	City      string `gorm:"size:64"`
 	Street    string `gorm:"size:64"`
 	Room      string `gorm:"size:64"`
@@ -18,6 +16,11 @@ type UserAddress struct {
 	UserID    uint   `gorm:"index" map:"OwnerID"`
 }
 
-func (po *UserAddress) writeDomain(userAdd *model.UserAddress) {
-	userAdd.ID = po.ID
+func (po *UserAddress) writeDomain(dm *model.UserAddress) {
+}
+
+func (po *UserAddress) readDomain(dm *model.UserAddress) {
+	po.Model = &gorm.Model{
+		ID: dm.ID,
+	}
 }

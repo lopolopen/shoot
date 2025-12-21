@@ -269,7 +269,7 @@ func (g *GeneratorBase) Generate(dataMaker DataMaker) map[string][]byte {
 func (g *GeneratorBase) generateOne(data any) []byte {
 	cflags := g.commonFlags
 	if cflags.Verbose {
-		logx.DebugJSONln("template data:\n", data)
+		logx.DebugJSON("template data:\n", data)
 	}
 
 	var buff bytes.Buffer
@@ -279,7 +279,7 @@ func (g *GeneratorBase) generateOne(data any) []byte {
 	}
 	src := buff.Bytes()
 	if cflags.Verbose {
-		logx.Debugln("raw source code:\n", string(src))
+		logx.Debug("raw source code:\n", string(src))
 	}
 
 	if cflags.Raw {

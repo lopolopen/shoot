@@ -11,25 +11,70 @@ import (
 
 //tips: write src means read rest, and vice versa
 
+const dot = "."
+
 func (g *Generator) makeReadWriteCheck() {
 	g.makeReadCond()
-	g.makeToSrcFromDest()
-	g.makeFromSrcToDest()
-	logx.DebugJSONln(g.data.ExactMatchMap)
+	g.nilCheckRead()
+	g.nilCheckWrite()
+	g.neverWriteCheck()
 }
 
-func (g *Generator) makeToSrcFromDest() {
+func (g *Generator) nilCheckRead() {
 	g.data.DestNeedReadCheckMap = make(map[string]string)
-
-	readDest := make(map[string]string)
-	var xWriteSrc []string
+	g.data.SrcNeedReadCheckMap = make(map[string]string)
 
 	for _, f := range g.exportedFields {
-		if g.assignedSrcSet[f.name] { //without writing, no reading
+		s := f.name
+
+		d, ok := g.readSrcMap[s]
+		if ok {
+			if _, ok := g.srcPathsMap[s]; ok {
+				g.data.SrcNeedReadCheckMap[s] = d
+			}
+		}
+
+		d, ok = g.readDestMap()[s]
+		if ok {
+			if _, ok := g.destPathsMap[d]; ok {
+				g.data.DestNeedReadCheckMap[f.name] = d
+			}
+		}
+	}
+
+}
+
+func (g *Generator) neverWriteCheck() {
+	var neverWriteSrc []string
+	var neverWriteDest []string
+
+	for _, f := range g.exportedFields {
+		s := f.name
+
+		if g.writeSrcSet[s] {
 			continue
 		}
 		c := false
-		for path := range g.assignedSrcSet { //Model covers Model.ID
+		for path := range g.writeSrcSet { //Model covers Model.ID
+			if f.CoveredBy(path) {
+				c = true
+				break
+			}
+		}
+		if c {
+			continue
+		}
+		neverWriteSrc = append(neverWriteSrc, f.path)
+	}
+
+	for _, f := range g.destExportedFields {
+		d := f.name
+
+		if g.writeDestSet[d] {
+			continue
+		}
+		c := false
+		for path := range g.writeDestSet {
 			if f.CoveredBy(path) {
 				c = true
 				break
@@ -39,102 +84,15 @@ func (g *Generator) makeToSrcFromDest() {
 			continue
 		}
 
-		src := f.name
-		if d, ok := g.data.ExactMatchMap[src]; ok { //d, ok
-			readDest[src] = d
-			continue
-		}
-		if _, ok := g.data.DestToSrcTypeMap[src]; ok { //_, ok
-			readDest[src] = g.data.ConvMatchMap[src]
-			continue
-		}
-		if _, ok := g.data.DestToSrcFuncMap[src]; ok {
-			readDest[src] = g.data.MismatchFuncMap[src]
-			continue
-		}
-		if d, ok := g.data.MismatchSubMap[src]; ok {
-			readDest[src] = d
-			continue
-		}
-		if d, ok := g.data.MismatchSubListMap[src]; ok {
-			readDest[src] = d
-			continue
-		}
-
-		xWriteSrc = append(xWriteSrc, f.path)
+		neverWriteDest = append(neverWriteDest, f.path)
 	}
 
-	for s, d := range readDest {
-		if _, ok := g.destReadPathsMap[d]; ok {
-			g.data.DestNeedReadCheckMap[s] = d
-		}
-	}
-
-	if len(xWriteSrc) > 0 {
-		names := strings.Join(xWriteSrc, ", ")
+	if len(neverWriteSrc) > 0 {
+		names := strings.Join(neverWriteSrc, ", ")
 		reportWarn(g.data.PackageName+"."+g.data.TypeName, names)
 	}
-}
-
-func (g *Generator) makeFromSrcToDest() {
-	g.data.SrcNeedReadCheckMap = make(map[string]string)
-
-	readSrc := make(map[string]string)
-	var xWriteDest []string
-outer:
-	for _, f := range g.destExportedFields {
-		if g.assignedDestSet[f.name] { //without writing, no reading
-			continue
-		}
-		for path := range g.assignedDestSet { //Model covers Model.ID
-			if f.CoveredBy(path) {
-				continue outer
-			}
-		}
-
-		dest := f.name
-		for s, d := range g.data.ExactMatchMap { //for s, d
-			if dest == d {
-				readSrc[s] = dest
-				continue outer
-			}
-		}
-		for s := range g.data.SrcToDestTypeMap { //for s
-			if dest == g.data.ConvMatchMap[s] {
-				readSrc[s] = dest
-				continue outer
-			}
-		}
-		for s := range g.data.SrcToDestFuncMap {
-			if dest == g.data.MismatchFuncMap[s] {
-				readSrc[s] = dest
-				continue outer
-			}
-		}
-		for s, d := range g.data.DestMismatchSubMap {
-			if dest == d {
-				readSrc[s] = dest
-				continue outer
-			}
-		}
-		for s, d := range g.data.MismatchSubListMap {
-			if dest == d {
-				readSrc[s] = dest
-				continue outer
-			}
-		}
-
-		xWriteDest = append(xWriteDest, f.name)
-	}
-
-	for s, d := range readSrc {
-		if _, ok := g.readPathsMap[s]; ok {
-			g.data.SrcNeedReadCheckMap[s] = d
-		}
-	}
-
-	if len(xWriteDest) > 0 {
-		names := strings.Join(xWriteDest, ", ")
+	if len(neverWriteDest) > 0 {
+		names := strings.Join(neverWriteDest, ", ")
 		reportWarn(g.data.QualifiedDestTypeName, names)
 	}
 }
@@ -146,24 +104,25 @@ func reportWarn(typename, fields string) {
 func (g *Generator) makeReadCond() {
 	g.RegisterTransfer("condofread", transfer.ID)
 
-	g.readPathsMap = make(map[string][]string)
-	g.destReadPathsMap = make(map[string][]string)
-	prepareReadPaths(g.exportedFields, g.ptrTypeMap, g.readPathsMap)
-	prepareReadPaths(g.destExportedFields, g.destPtrTypeMap, g.destReadPathsMap)
+	g.srcPathsMap = make(map[string][]string)
+	g.destPathsMap = make(map[string][]string)
+	prepareReadPaths(g.exportedFields, g.srcPtrTypeMap, g.srcPathsMap)
+	prepareReadPaths(g.destExportedFields, g.destPtrTypeMap, g.destPathsMap)
 
 	g.RegisterTransfer("condofread", func(v, name string, isSrc bool) string {
-		var readPathsMap map[string][]string
+		var pathsMap map[string][]string
 		if isSrc {
-			readPathsMap = g.readPathsMap
+			pathsMap = g.srcPathsMap
 		} else {
-			readPathsMap = g.destReadPathsMap
+			pathsMap = g.destPathsMap
 		}
-		paths := readPathsMap[name]
+		paths := pathsMap[name]
 		sort.Strings(paths)
+		ps := make([]string, len(paths))
 		for i, p := range paths {
-			paths[i] = fmt.Sprintf(" %s.%s != nil ", v, p)
+			ps[i] = fmt.Sprintf(" %s.%s != nil ", v, p)
 		}
-		return strings.Join(paths, "&&")
+		return strings.Join(ps, "&&")
 	})
 }
 
@@ -185,4 +144,57 @@ func prepareReadPaths(fields []Field, ptrTypeMap map[string]string, readPathsMap
 		}
 		readPathsMap[f.name] = readPaths
 	}
+}
+
+func (g *Generator) nilCheckWrite() {
+	g.data.SrcPtrTypeMap = make(map[string]string)
+	g.data.DestPtrTypeMap = make(map[string]string)
+
+	var srcPtrPathList []string
+	var destPtrPathList []string
+	for _, f := range g.exportedFields {
+		s := f.name
+
+		_, ok := g.writeSrcMap[s]
+		if ok && f.IsEmbeded() {
+			for p, t := range g.srcPtrTypeMap {
+				if _, ok := g.data.SrcPtrTypeMap[p]; ok {
+					continue
+				}
+
+				if f.CoveredBy(p) {
+					srcPtrPathList = append(srcPtrPathList, p)
+					g.data.SrcPtrTypeMap[p] = t
+				}
+			}
+		}
+	}
+
+	for _, f := range g.destExportedFields {
+		for _, d := range g.writeDestMap() {
+			if f.name != d {
+				continue
+			}
+
+			if !f.IsEmbeded() {
+				continue
+			}
+
+			for p, t := range g.destPtrTypeMap {
+				if _, ok := g.data.DestPtrTypeMap[p]; ok {
+					continue
+				}
+
+				if f.CoveredBy(p) {
+					destPtrPathList = append(destPtrPathList, p)
+					g.data.DestPtrTypeMap[p] = t
+				}
+			}
+		}
+	}
+
+	sort.Strings(srcPtrPathList)
+	g.data.SrcPtrPathList = srcPtrPathList
+	sort.Strings(destPtrPathList)
+	g.data.DestPtrPathList = destPtrPathList
 }

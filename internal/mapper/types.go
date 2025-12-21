@@ -15,17 +15,19 @@ type TmplData struct {
 	DestPkgPath           string            //mappersample/domain/model
 	QualifiedDestTypeName string            //domain.Order
 	SrcFieldList          []string          //[ID, Status, ...]
-	ExactMatchMap         map[string]string //ID -> ID
-	DestExactMatchMap     map[string]string
+	SrcEqMatchMap         map[string]string //ID -> ID
+	DestEqMatchMap        map[string]string
 
-	SrcPtrTypeMap  map[string]string
-	SrcPtrPathList []string
+	SrcPtrTypeMap   map[string]string //Model -> gorm.Model
+	SrcPtrPathList  []string
+	DestPtrTypeMap  map[string]string
+	DestPtrPathList []string
 
-	SrcNeedReadCheckMap map[string]string
-
+	SrcNeedReadCheckMap  map[string]string
 	DestNeedReadCheckMap map[string]string
-	DestPtrTypeMap       map[string]string
-	DestAccessCondMap    map[string]string
+
+	SrcNeedWriteCheckMap  map[string]string
+	DestNeedWriteCheckMap map[string]string
 
 	ConvMatchMap     map[string]string //Quantity -> Quantity
 	SrcToDestTypeMap map[string]string //Quantity -> int32
@@ -63,9 +65,10 @@ type Flags struct {
 }
 
 type Field struct {
-	name string //ID
-	path string //Model.ID
-	typ  types.Type
+	name  string //ID
+	path  string //Model.ID
+	typ   types.Type
+	depth int32
 }
 
 func (f Field) IsEmbeded() bool {

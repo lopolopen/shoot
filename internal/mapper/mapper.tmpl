@@ -21,9 +21,23 @@ func ({{$src}} *{{.TypeName}}) {{$ToDest}}() *{{.QualifiedDestTypeName}} {
         return nil
     }
     {{$dest}} := new({{.QualifiedDestTypeName}}) {{"\n"}}
+    {{- range $p := $.DestPtrPathList -}}
+    if {{$dest}}.{{$p}} == nil {
+        {{$dest}}.{{$p}} = new({{index $.DestPtrTypeMap $p}})
+    } {{"\n"}}
+    {{- end -}}
+
+    {{- /* ----------------- */ -}}
     {{- range $s := $.SrcFieldList -}}
 
-    {{- $d := index $.ExactMatchMap $s -}}
+    {{- $d := index $.SrcNeedReadCheckMap $s -}}
+    {{- $close := false -}}
+    {{- if $d -}}
+    if {{condofread $src $s true}} { {{"\n"}}
+    {{- $close = true -}}
+    {{- end -}}
+
+    {{- $d := index $.DestEqMatchMap $s -}}
     {{- if $d -}}
     {{$dest}}.{{$d}} = {{$src}}.{{$s}}{{"\n"}}
     {{- end -}}
@@ -63,7 +77,13 @@ func ({{$src}} *{{.TypeName}}) {{$ToDest}}() *{{.QualifiedDestTypeName}} {
     } {{"\n"}}
     {{- end -}}
 
+    {{- if $close -}}
+    }  {{"\n"}}
+    {{- end -}}
+
     {{- end -}} 
+    {{- /* ----------------- */ -}}
+
     {{- if $.WriteMethodName -}}
     {{$src}}.{{$.WriteMethodName}}({{$dest}}) {{"\n"}}
     {{- end -}}
@@ -79,10 +99,12 @@ func ({{$src}} *{{.TypeName}}) {{$FromDest}}({{$dest}} *{{.QualifiedDestTypeName
         {{$src}} = new({{.TypeName}})
     } {{"\n"}}
     {{- range $p := $.SrcPtrPathList -}}
-    {{$src}}.{{$p}} = new({{index $.SrcPtrTypeMap $p}}) {{"\n"}}
+    if {{$src}}.{{$p}} == nil {
+        {{$src}}.{{$p}} = new({{index $.SrcPtrTypeMap $p}})
+    } {{"\n"}}
     {{- end -}}
 
-    {{/* ----------------- */}}
+    {{- /* ----------------- */ -}}
     {{- range $s := $.SrcFieldList -}}
 
     {{- $d := index $.DestNeedReadCheckMap $s -}}
@@ -92,14 +114,14 @@ func ({{$src}} *{{.TypeName}}) {{$FromDest}}({{$dest}} *{{.QualifiedDestTypeName
     {{- $close = true -}}
     {{- end -}}
 
-    {{- $d := index $.ExactMatchMap $s -}}
+    {{- $d := index $.SrcEqMatchMap $s -}}
     {{- if $d -}}
     {{$src}}.{{$s}} = {{$dest}}.{{$d}} {{"\n"}}
     {{- end -}}
 
     {{- $type := index $.DestToSrcTypeMap $s -}}
     {{- if $type -}}
-    {{$src}}.{{$s}} = {{$type}}({{$src}}.{{index $.ConvMatchMap $s}}) {{"\n"}}
+    {{$src}}.{{$s}} = {{$type}}({{$dest}}.{{index $.ConvMatchMap $s}}) {{"\n"}}
     {{- end -}}
 
     {{- $func := index $.DestToSrcFuncMap $s -}}
@@ -131,7 +153,7 @@ func ({{$src}} *{{.TypeName}}) {{$FromDest}}({{$dest}} *{{.QualifiedDestTypeName
     {{- end -}}
 
     {{- end -}}
-    {{/* ----------------- */}}
+    {{- /* ----------------- */ -}}
 
     {{- if $.ReadMethodName -}}
     {{$src}}.{{$.ReadMethodName}}({{$.ReadParamPrefix}}{{$dest}}) {{"\n"}}

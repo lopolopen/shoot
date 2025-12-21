@@ -39,4 +39,5 @@ type UserAddress struct {
 	Room      string
 	Tag       string
 	IsDefault bool
+	UserID    uint `map:"OwnerID"`
 }

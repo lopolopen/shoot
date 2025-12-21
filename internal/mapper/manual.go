@@ -10,8 +10,11 @@ import (
 )
 
 func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
-	g.assignedSrcSet = make(map[string]bool)
-	g.assignedDestSet = make(map[string]bool)
+	g.writeSrcSet = make(map[string]bool)
+	g.writeDestSet = make(map[string]bool)
+
+	// g.readSrcMap = make(map[string]string)
+	// g.writeSrcMap = make(map[string]string)
 
 	pkg := g.Pkg()
 	for _, f := range pkg.Syntax {
@@ -41,17 +44,11 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 							continue
 						}
 						recvTypeName = srcTypeName
-						// if isRead {
-						// 	logx.Fatalf("method (%s).%s must use a pointer receiver", recvTypeName, fn.Name.Name)
-						// }
 					case *ast.StarExpr: //pointer receiver
 						if ident, ok := expr.X.(*ast.Ident); ok && ident.Name != srcTypeName {
 							continue
 						}
 						recvTypeName = "*" + srcTypeName
-						// if isWrite {
-						// 	log.Printf("💡 method (%s).%s should use a value receiver (recommended)", recvTypeName, fn.Name.Name)
-						// }
 					}
 
 					if fn.Type.Params == nil || len(fn.Type.Params.List) != 1 {
@@ -74,9 +71,6 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 						}
 					case *ast.StarExpr: //pointer dest param
 						paramTypeExpr = expr.X
-						if isRead {
-							// log.Printf("💡 method (%s).%s should use a value parameter (recommended)", recvTypeName, fn.Name.Name)
-						}
 					}
 
 					//checking param type needs full type name
@@ -94,7 +88,7 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 						}
 						names := findAssignedFieldPaths(fn, fn.Type.Params.List[0].Names[0].Name)
 						for _, n := range names {
-							g.assignedDestSet[n] = true
+							g.writeDestSet[n] = true
 						}
 					} else if isRead {
 						if g.data.ReadMethodName == "" {
@@ -104,12 +98,11 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 						}
 						names := findAssignedFieldPaths(fn, recv.Names[0].Name)
 						for _, n := range names {
-							g.assignedSrcSet[n] = true
+							g.writeSrcSet[n] = true
 						}
 					}
 				}
 			}
-
 			return false
 		})
 	}

@@ -147,6 +147,9 @@ func (g *Generator) makeMismatch() {
 	g.data.MismatchSubListMap = make(map[string]string)
 	g.data.DestMismatchSubListMap = make(map[string]string)
 
+	g.writeSrcMap = make(map[string]string)
+	g.readSrcMap = make(map[string]string)
+
 	for _, f1 := range g.exportedFields {
 		for _, f2 := range g.destExportedFields {
 			if !canNameMatch(f1.name, f2.name, g.tagMap) {
@@ -166,29 +169,29 @@ func (g *Generator) makeMismatch() {
 
 func (g *Generator) makeFuncMap(f1, f2 Field) {
 	for _, fn := range g.mappingFuncList {
-		if !g.assignedDestSet[f2.name] {
-			//in ToXxx, mapping func's param type is src filed type
+		if !g.writeDestSet[f2.name] {
+			//in ToXxx, mapping func's param type is src field type
 			if fn.param.String() == f1.typ.String() && fn.result.String() == f2.typ.String() {
 				g.data.SrcToDestFuncMap[f1.name] = fn.name
 				g.data.MismatchFuncMap[f1.name] = f2.name
+				g.writeDestSet[f2.name] = true
+				g.readSrcMap[f1.name] = f2.name
 			}
 		}
 
-		if !g.assignedSrcSet[f1.name] {
-			//in FromXxx, the opposite applies
+		if !g.writeSrcSet[f1.name] {
+			//in FromXxx, mapping func's param type is dest field type
 			if fn.param.String() == f2.typ.String() && fn.result.String() == f1.typ.String() {
 				g.data.DestToSrcFuncMap[f1.name] = fn.name
 				g.data.MismatchFuncMap[f1.name] = f2.name
+				g.writeSrcSet[f1.name] = true
+				g.writeSrcMap[f1.name] = f2.name
 			}
 		}
 	}
 }
 
 func (g *Generator) makeSubMap(sub1, sub2 Field) {
-	if _, ok := g.data.MismatchFuncMap[sub1.name]; ok {
-		return
-	}
-
 	typ1 := sub1.typ
 	typ2 := sub2.typ
 	if p, ok := typ1.(*types.Pointer); ok {
@@ -210,11 +213,15 @@ func (g *Generator) makeSubMap(sub1, sub2 Field) {
 			g.data.DestSubTypeMap[sub2.name] = qualifiedTypeName(typ2, g.flags.alias)
 
 			if pkgpath1 == g.Pkg().PkgPath && pkgpath2 == g.destPkg.PkgPath {
-				if !g.assignedSrcSet[sub1.name] {
+				if !g.writeSrcSet[sub1.name] {
 					g.data.MismatchSubMap[sub1.name] = sub2.name
+					g.writeSrcSet[sub1.name] = true
+					g.writeSrcMap[sub1.name] = sub2.name
 				}
-				if !g.assignedDestSet[sub2.name] {
+				if !g.writeDestSet[sub2.name] {
 					g.data.DestMismatchSubMap[sub1.name] = sub2.name
+					g.writeDestSet[sub2.name] = true
+					g.readSrcMap[sub1.name] = sub2.name
 				}
 			}
 		}
@@ -222,16 +229,6 @@ func (g *Generator) makeSubMap(sub1, sub2 Field) {
 }
 
 func (g *Generator) makeSubListMap(subs1, subs2 Field) {
-	if _, ok := g.data.MismatchFuncMap[subs1.name]; ok {
-		return
-	}
-	if _, ok := g.data.MismatchSubMap[subs1.name]; ok {
-		return
-	}
-	if _, ok := g.data.DestMismatchSubMap[subs1.name]; ok {
-		return
-	}
-
 	var typ1, typ2 types.Type
 	if s, ok := subs1.typ.(*types.Slice); ok {
 		typ1 = s.Elem()
@@ -261,11 +258,15 @@ func (g *Generator) makeSubListMap(subs1, subs2 Field) {
 			g.data.DestSubTypeMap[subs2.name] = qualifiedTypeName(typ2, g.flags.alias)
 
 			if pkgpath1 == g.Pkg().PkgPath && pkgpath2 == g.destPkg.PkgPath {
-				if !g.assignedSrcSet[subs1.name] {
+				if !g.writeSrcSet[subs1.name] {
 					g.data.MismatchSubListMap[subs1.name] = subs2.name
+					g.writeSrcSet[subs1.name] = true
+					g.writeSrcMap[subs1.name] = subs2.name
 				}
-				if !g.assignedDestSet[subs2.name] {
+				if !g.writeDestSet[subs2.name] {
 					g.data.DestMismatchSubListMap[subs1.name] = subs2.name
+					g.writeDestSet[subs2.name] = true
+					g.readSrcMap[subs1.name] = subs2.name
 				}
 			}
 		}

@@ -2,12 +2,9 @@
 
 package enums
 
-import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/lopolopen/shoot"
-)
+import "encoding/json"
+import "fmt"
+import "github.com/lopolopen/shoot"
 
 func _() {
 	var x [1]struct{}
@@ -20,15 +17,12 @@ func _() {
 const _orderStatus_all = OrderStatusPending | OrderStatusCompleted | OrderStatusCanceled | 0
 
 var _orderStatus_values = []OrderStatus{OrderStatusPending, OrderStatusCompleted, OrderStatusCanceled}
-
 var _orderStatus_strings = []string{"Pending", "Completed", "Canceled"}
-
 var _orderStatus_string_map = map[OrderStatus]string{
 	OrderStatusPending:   "Pending",
 	OrderStatusCompleted: "Completed",
 	OrderStatusCanceled:  "Canceled",
 }
-
 var _orderStatus_value_map = map[string]OrderStatus{
 	"Pending":   OrderStatusPending,
 	"Completed": OrderStatusCompleted,
@@ -47,19 +41,15 @@ func (o OrderStatus) String() string {
 
 	return fmt.Sprintf("%d", o)
 }
-
 func (o OrderStatus) Values() []OrderStatus {
 	return _orderStatus_values
 }
-
 func (o OrderStatus) Strings() []string {
 	return _orderStatus_strings
 }
-
 func (o OrderStatus) ValueMap() map[string]OrderStatus {
 	return _orderStatus_value_map
 }
-
 func (o OrderStatus) StringMap() map[OrderStatus]string {
 	return _orderStatus_string_map
 }

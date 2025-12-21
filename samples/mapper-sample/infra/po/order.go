@@ -1,30 +1,27 @@
 package po
 
 import (
-	"database/sql"
 	"mappersample/domain/enums"
 	"mappersample/domain/model"
 	"mappersample/infra/mapper"
 	"time"
 
 	"github.com/shopspring/decimal"
+	"gorm.io/gorm"
 )
 
 type Order struct {
 	*mapper.SQLMapper
-	ID        string
+	*gorm.Model
+	ID        string            `gorm:"primarykey"`
 	Amount    decimal.Decimal   `gorm:"type:decimal(20,2)"`
-	Status    enums.OrderStatus `gorm:"type:enum('PENDING', 'COMPLETED', 'CANCELED')"`
+	Status    enums.OrderStatus `gorm:"type:enum('Pending', 'Completed', 'Canceled')"`
+	City      string
+	Street    string
+	Room      string
 	OrderTime time.Time
-	NullTime  sql.Null[time.Time]
-	City      string `map:"Addres."`
-	Street    string `map:"Addres."`
-	Room      string `map:"Addres."` //todo:
 }
 
-func (o *Order) writeDomain(order *model.Order) {
-	order.X = 0
-	order.Price = model.Price{}
-	order.Price2 = decimal.Zero
-	order.Value = 0
+func (po *Order) readDomain(model.Order) {
+	po.Model = nil
 }
