@@ -103,7 +103,7 @@ func (g *Generator) ParseFlags() {
 }
 
 func (g *Generator) LoadPackage() {
-	cwd := "."
+	cwd := g.CommonFlags().Dir
 	destDir := g.flags.destDir
 	cfg := &packages.Config{
 		Mode: packages.NeedName |
