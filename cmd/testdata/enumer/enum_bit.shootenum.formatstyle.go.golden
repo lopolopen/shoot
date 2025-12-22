@@ -14,7 +14,6 @@ func _() {
 	_ = x[Italic-2]
 	_ = x[Underline-4]
 	_ = x[Strikethrough-8]
-
 }
 
 const _formatStyle_all = None | Bold | Italic | Underline | Strikethrough | 0

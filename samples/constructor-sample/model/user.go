@@ -1,6 +1,6 @@
 package model
 
-//go:generate go tool shoot new -exp -opt -getset -json -file=$GOFILE
+//go:generate go tool shoot new -exp -opt -getset -json -tagcase=camel -file=$GOFILE
 
 type User struct {
 	//shoot: get

@@ -11,7 +11,6 @@ func _() {
 	_ = x[LightRed-0]
 	_ = x[LightYello-1]
 	_ = x[LightGreen-2]
-
 }
 
 const _light_all = LightRed | LightYello | LightGreen | 0
@@ -67,7 +66,6 @@ func (l *Light) UnmarshalJSON(data []byte) error {
 	if err = json.Unmarshal(data, &s_); err != nil {
 		return fmt.Errorf("Light enum should be a string, got %s", data)
 	}
-
 	if v_, err = shoot.ParseEnum[Light](s_); err != nil {
 		return err
 	}

@@ -12,10 +12,10 @@ import "github.com/lopolopen/shoot"
 {{- end}}
 
 func _() {
-	var x [1]struct{}
-	{{range .NameList -}}
-	_ = x[{{.}}-{{valueof .}}]{{"\n"}}
-	{{- end}}
+	var x [1]struct{} {{"\n"}}
+	{{- range .NameList -}}
+	_ = x[{{.}}-{{valueof .}}] {{"\n"}}
+	{{- end -}}
 }
 
 const _{{camelCase .TypeName}}_all = {{range .NameList}}{{.}} |{{end}}0
@@ -24,16 +24,16 @@ var _{{camelCase .TypeName}}_values = []{{.TypeName}}{ {{range .NameList}}{{.}},
 
 var _{{camelCase .TypeName}}_strings = []string{ {{range .NameList}}"{{strof .}}", {{end}} }
 
-var _{{camelCase .TypeName}}_string_map = map[{{.TypeName}}]string{
-	{{range .NameList -}}
-	{{.}}: "{{strof .}}",{{"\n"}}
-	{{- end}}
+var _{{camelCase .TypeName}}_string_map = map[{{.TypeName}}]string { {{"\n"}}
+	{{- range .NameList -}}
+	{{.}}: "{{strof .}}", {{"\n"}}
+	{{- end -}}
 }
 
-var _{{camelCase .TypeName}}_value_map = map[string]{{.TypeName}}{
-	{{range .NameList -}}
-	"{{strof .}}": {{.}},{{"\n"}}
-	{{- end}}
+var _{{camelCase .TypeName}}_value_map = map[string]{{.TypeName}} { {{"\n"}}
+	{{- range .NameList -}}
+	"{{strof .}}": {{.}}, {{"\n"}}
+	{{- end -}}
 }
 
 // String returns the string value of type {{.TypeName}}
@@ -98,7 +98,6 @@ func ({{$this}} *{{.TypeName}}) UnmarshalJSON(data []byte) error {
 	if err = json.Unmarshal(data, &s_); err != nil {
 		return fmt.Errorf("{{.TypeName}} enum should be a string, got %s", data)
 	}
-
 	if v_, err = shoot.ParseEnum[{{.TypeName}}](s_); err != nil {
 		return err
 	}

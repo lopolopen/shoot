@@ -73,7 +73,6 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	u.SetId(user_.Id)
 	u.SetName(user_.Name)
 	u.SetAge(user_.Age)
-
 	return nil
 }
 
@@ -119,7 +118,6 @@ func (q *QueryUsersReq) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	q.SetName(queryUsersReq_.Name)
-
 	return nil
 }
 
@@ -165,7 +163,6 @@ func (q *QueryUsersResp) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	q.SetData(queryUsersResp_.Data)
-
 	return nil
 }
 
@@ -241,7 +238,6 @@ func (b *Book) UnmarshalJSON(data []byte) error {
 	b.SetSn(book_.Sn)
 	b.SetName(book_.Name)
 	b.SetPrice(book_.Price)
-
 	return nil
 }
 
@@ -277,17 +273,14 @@ func (q *QueryBooksReq) SetLanguage(language_ string) {
 }
 
 type _QueryBooksReq_marshal struct {
-	Name     string `json:"name"`
-	Language string
-
-	PageSize int
-
+	Name      string `json:"name"`
+	Language  string
+	PageSize  int
 	PageIndex int `json:"PageIndex"`
 }
 type _QueryBooksReq_unmarshal struct {
-	Name     string `json:"name"`
-	Language string
-
+	Name      string `json:"name"`
+	Language  string
 	PageSize  int
 	PageIndex int `json:"PageIndex"`
 }
@@ -295,9 +288,8 @@ type _QueryBooksReq_unmarshal struct {
 // MarshalJSON serializes type QueryBooksReq to json bytes
 func (q QueryBooksReq) MarshalJSON() ([]byte, error) {
 	data := _QueryBooksReq_marshal{
-		Name:     q.Name(),
-		Language: q.Language(),
-
+		Name:      q.Name(),
+		Language:  q.Language(),
 		PageSize:  q.PageSize,
 		PageIndex: q.PageIndex,
 	}
@@ -312,10 +304,8 @@ func (q *QueryBooksReq) UnmarshalJSON(data []byte) error {
 	}
 	q.SetName(queryBooksReq_.Name)
 	q.SetLanguage(queryBooksReq_.Language)
-
 	q.PageSize = queryBooksReq_.PageSize
 	q.PageIndex = queryBooksReq_.PageIndex
-
 	return nil
 }
 
@@ -361,7 +351,6 @@ func (q *QueryBooksResp) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	q.SetData(queryBooksResp_.Data)
-
 	return nil
 }
 

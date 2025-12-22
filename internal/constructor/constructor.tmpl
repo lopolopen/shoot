@@ -11,30 +11,30 @@ package {{.PackageName}}
 {{if .Imports}}
 import (
 	{{.Imports}}
-)
-{{end}}
-{{if .Json -}}
-import "encoding/json"
-{{- end}}
-{{if and .Option (not .Self) -}}
-import "github.com/lopolopen/shoot"
+) {{"\n"}}
+{{- end -}}
+{{- if .Json -}}
+import "encoding/json" {{"\n"}}
+{{- end -}}
+{{- if and .Option (not .Self) -}}
+import "github.com/lopolopen/shoot" {{"\n"}}
 {{- end}}
 
 // New{{.TypeName}} constructs a new instance of type {{.TypeName}}
 func New{{.TypeName}}({{range .NewList}}{{camelCase .}} {{typeof .}},{{end}}) *{{.TypeName}} {
-	return &{{.TypeName}}{ 
-		{{range .NewList -}}
-		{{.}}: {{camelCase .}},
-		{{end}}
+	return &{{.TypeName}}{ {{"\n"}}
+		{{- range .NewList -}}
+		{{.}}: {{camelCase .}}, {{"\n"}}
+		{{- end -}}
 	}
 }
 
 {{if .Option}}
 // With initializes this instance using the functional options pattern
-func ({{$this}} *{{.TypeName}})With(opts ...{{$shoot}}Option[{{.TypeName}}, *{{.TypeName}}]) *{{.TypeName}} { 
-	{{- if .DefaultList}}
-	{{$this}}.SetDefault()
-	{{end -}}
+func ({{$this}} *{{.TypeName}})With(opts ...{{$shoot}}Option[{{.TypeName}}, *{{.TypeName}}]) *{{.TypeName}} { {{"\n"}}
+	{{- if .DefaultList -}}
+	{{$this}}.SetDefault() {{"\n"}}
+	{{- end -}}
 	for _, opt := range opts {
         opt({{$this}})
     }
@@ -51,70 +51,69 @@ func {{$fname}}({{camelCase .}}_ {{typeof .}}){{$shoot}}Option[{{$.TypeName}}, *
 	 return func({{$this}} *{{$.TypeName}}) {
         {{$this}}.{{.}} = {{camelCase .}}_ 
     }
-}
-{{end}}
+} {{"\n"}}
+{{- end -}} {{"\n"}}
 
-{{if .DefaultList}}
+{{- if .DefaultList -}}
 // SetDefault sets the default values
-func ({{$this}} *{{.TypeName}})SetDefault(){
+func ({{$this}} *{{.TypeName}})SetDefault(){ {{"\n"}}
 	{{- range .DefaultList -}}
-	{{$this}}.{{.}} = {{defaultof .}}{{"\n"}}
+	{{$this}}.{{.}} = {{defaultof .}} {{"\n"}}
 	{{- end -}}
-}
-{{- end}}
-{{end}}
+} {{"\n"}}
+{{- end -}}
+{{- end -}} {{"\n"}}
 
-
-{{if .GetSet}}
-{{range .GetterList -}}
+{{- if .GetSet -}}
+{{- range .GetterList -}}
 // {{pascalCase .}} gets the value of field {{.}}
 func ({{$this}} *{{$.TypeName}}){{pascalCase .}}() {{typeof .}} {
 	return {{$this}}.{{.}}
-}
-{{end}}
+} {{"\n"}}
+{{- end -}}
 
-{{range .SetterList}}
+{{- range .SetterList -}}
 // Set{{pascalCase .}} sets the value of field {{.}}
 func ({{$this}} *{{$.TypeName}})Set{{pascalCase .}}({{.}}_ {{typeof .}}) {
 	{{$this}}.{{.}} = {{.}}_
-}
-{{end}}
-{{end}}
+} {{"\n"}}
+{{- end -}}
+{{- end -}}
 
-{{if .Json}}
-type _{{.TypeName}}_marshal struct { 
-	{{range .GetterList -}}
-	{{pascalCase .}} {{typeof .}}{{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{"\n"}}
-	{{- end}}
-	{{range $.ExportedList -}} 
-	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{"\n"}}
-	{{- end}}
+{{- if .Json -}}
+type _{{.TypeName}}_marshal struct { {{"\n"}}
+	{{- range .GetterList -}}
+	{{pascalCase .}} {{typeof .}}{{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}} {{"\n"}}
+	{{- end -}}
+	{{- range $.ExportedList -}} 
+	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}} {{"\n"}}
+	{{- end -}}
 }
 
-type _{{.TypeName}}_unmarshal struct { 
-	{{range .SetterList -}}
-	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{"\n"}}
-	{{- end}}
-	{{range .ExportedList -}}
-	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}}{{"\n"}}
-	{{- end}}
+type _{{.TypeName}}_unmarshal struct { {{"\n"}}
+	{{- range .SetterList -}}
+	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}} {{"\n"}}
+	{{- end -}}
+	{{- range .ExportedList -}}
+	{{pascalCase .}} {{typeof .}} {{if (jsontagof .)}}`json:"{{jsontagof .}}"`{{end}} {{"\n"}}
+	{{- end -}}
 }
 
 // MarshalJSON serializes type {{.TypeName}} to json bytes
 func ({{$this}} {{.TypeName}})MarshalJSON()([]byte, error) {
-	data := _{{.TypeName}}_marshal{ 
-		{{range .GetterList -}}
+	data := _{{.TypeName}}_marshal{  {{"\n"}}
+		{{- range .GetterList -}}
 		{{pascalCase .}}: {{$this}}.{{pascalCase .}}(),{{"\n"}}
-		{{- end}}
-		{{range .ExportedList -}}
+		{{- end -}}
+		{{- range .ExportedList -}}
 		{{.}}: {{$this}}.{{.}},{{"\n"}}
-		{{- end}}
-	}
-	{{if not .EmbedList -}}
+		{{- end -}}
+	} {{"\n"}}
+	{{- if not .EmbedList -}}
 	return json.Marshal(data)
-	{{- else}}
-	values := make(map[string]interface{})
-	{{range $i, $v := .EmbedList -}}
+	{{- else -}}
+	values := make(map[string]interface{}) {{"\n"}}
+	{{- range $i, $v := .EmbedList -}}
 	j{{$i}}, err := json.Marshal({{$this}}.{{$v}})
 	if err != nil {
 		return nil, err
@@ -122,8 +121,8 @@ func ({{$this}} {{.TypeName}})MarshalJSON()([]byte, error) {
 	err = json.Unmarshal(j{{$i}}, &values)
 	if err != nil {
 		return nil, err
-	}
-	{{- end}}
+	} {{"\n"}}
+	{{- end -}}
 	j, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -132,8 +131,8 @@ func ({{$this}} {{.TypeName}})MarshalJSON()([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(values)
-	{{- end}}
+	return json.Marshal(values) {{"\n"}}
+	{{- end -}}
 }
 
 // UnmarshalJSON deserializes json bytes to type {{.TypeName}}
@@ -141,14 +140,14 @@ func ({{$this}} *{{.TypeName}})UnmarshalJSON(data []byte) error {
 	var {{camelCase .TypeName}}_ _{{.TypeName}}_unmarshal
 	if err := json.Unmarshal(data, &{{camelCase .TypeName}}_); err != nil {
 		return err
-	}
-	{{range .SetterList -}}
-	{{$this}}.Set{{pascalCase .}}({{camelCase $.TypeName}}_.{{pascalCase .}}){{"\n"}}
-	{{- end}}
-	{{range .ExportedList -}}
-	{{$this}}.{{.}} = {{camelCase $.TypeName}}_.{{.}}{{"\n"}}
-	{{- end}} 
-	{{if .EmbedList -}}
+	} {{"\n"}}
+	{{- range .SetterList -}}
+	{{$this}}.Set{{pascalCase .}}({{camelCase $.TypeName}}_.{{pascalCase .}}) {{"\n"}}
+	{{- end -}}
+	{{- range .ExportedList -}}
+	{{$this}}.{{.}} = {{camelCase $.TypeName}}_.{{.}} {{"\n"}}
+	{{- end -}} 
+	{{- if .EmbedList -}}
 	all := make(map[string]interface{})
 	err := json.Unmarshal(data, &all)
 	if err != nil {
@@ -169,14 +168,14 @@ func ({{$this}} *{{.TypeName}})UnmarshalJSON(data []byte) error {
 	jrest, err := json.Marshal(all)
 	if err != nil {
 		return err
-	}
-	{{range .EmbedList -}}
-		err = json.Unmarshal(jrest, &{{$this}}.{{.}})
-		if err != nil {
-			return err
-		}
-	{{- end}}
-	{{- end}}
+	} {{"\n"}}
+	{{- range .EmbedList -}}
+	err = json.Unmarshal(jrest, &{{$this}}.{{.}})
+	if err != nil {
+		return err
+	} {{"\n"}}
+	{{- end -}}
+	{{- end -}}
 	return nil
 }
 {{end}}

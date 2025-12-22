@@ -52,13 +52,12 @@ func (k KV) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON deserializes json bytes to type KV
 func (k *KV) UnmarshalJSON(data []byte) error {
-	var kV_ _KV_unmarshal
-	if err := json.Unmarshal(data, &kV_); err != nil {
+	var kv_ _KV_unmarshal
+	if err := json.Unmarshal(data, &kv_); err != nil {
 		return err
 	}
-	k.SetKey(kV_.Key)
-	k.SetValue(kV_.Value)
-
+	k.SetKey(kv_.Key)
+	k.SetValue(kv_.Value)
 	return nil
 }
 
