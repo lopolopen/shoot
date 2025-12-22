@@ -23,7 +23,7 @@ func (g *Generator) makeOpt(typeName string) {
 				return true
 			}
 			if ts.Name.Name != typeName {
-				return false
+				return true
 			}
 			st, ok := ts.Type.(*ast.StructType)
 			if !ok {

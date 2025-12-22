@@ -5,16 +5,17 @@ import (
 	"go/ast"
 	"go/printer"
 	"go/token"
+	"go/types"
 	"regexp"
 
 	"github.com/lopolopen/shoot/internal/shoot"
 	"github.com/lopolopen/shoot/internal/tools/logx"
 	"github.com/lopolopen/shoot/internal/transfer"
+	"golang.org/x/tools/go/packages"
 )
 
 func (g *Generator) makeNew(typeName string) {
 	g.RegisterTransfer("typeof", transfer.ID)
-	g.RegisterTransfer("xof", transfer.ID)
 
 	var imports string
 	var allList []string
@@ -29,6 +30,7 @@ func (g *Generator) makeNew(typeName string) {
 		g.data.Self = true
 	}
 
+	typeExists := false
 	for _, f := range g.Package().Files() {
 		ast.Inspect(f.File(), func(n ast.Node) bool {
 			ts, ok := n.(*ast.TypeSpec)
@@ -37,24 +39,18 @@ func (g *Generator) makeNew(typeName string) {
 			}
 
 			if ts.Name.Name != typeName {
-				return false
+				return true
 			}
 
-			_, ok = ts.Type.(*ast.StructType)
+			st, ok := ts.Type.(*ast.StructType)
 			if !ok {
 				logx.Fatalf("type %s is not a struct type", ts.Name.Name)
 			}
 
-			imports = buildImports(f.File().Imports)
-
-			st, ok := ts.Type.(*ast.StructType)
-			if !ok {
-				return true
-			}
-
+			typeExists = true
 			for _, field := range st.Fields.List {
 				if len(field.Names) == 0 {
-					xMap = parseEmbedField(field)
+					xMap = parseEmbedField(g.Pkg(), field)
 					for typ := range xMap {
 						embedList = append(embedList, typ)
 					}
@@ -88,12 +84,16 @@ func (g *Generator) makeNew(typeName string) {
 					}
 				}
 			}
+
+			imports = buildImports(f.File().Imports)
 			return false
 		})
 	}
+	if !typeExists {
+		logx.Fatalf("type not exists: %s", typeName)
+	}
 
 	g.data.Imports = imports
-
 	g.data.AllList = allList
 	if len(newList) > 0 {
 		g.data.NewList = newList
@@ -106,9 +106,6 @@ func (g *Generator) makeNew(typeName string) {
 
 	g.RegisterTransfer("typeof", func(key string) string {
 		return typeMap[key]
-	})
-	g.RegisterTransfer("xof", func(key string) string {
-		return xMap[key]
 	})
 }
 
@@ -142,28 +139,50 @@ func exprString(fset *token.FileSet, expr ast.Expr) string {
 	return buf.String()
 }
 
-func parseEmbedField(file *ast.Field) map[string]string {
+func parseEmbedField(pkg *packages.Package, field *ast.Field) map[string]string {
+	//todo: only supports 1 depth, recursively ref shoot map
+
+	if !hasFields(pkg.TypesInfo.TypeOf(field.Type)) {
+		return nil
+	}
+
 	selMap := make(map[string]string)
-	if len(file.Names) == 0 {
-		switch t := file.Type.(type) {
+	switch t := field.Type.(type) {
+	case *ast.Ident:
+		selMap[t.Name] = ""
+	case *ast.SelectorExpr:
+		if pkgIdent, ok := t.X.(*ast.Ident); ok {
+			selMap[t.Sel.Name] = pkgIdent.Name
+		}
+	case *ast.StarExpr:
+		switch x := t.X.(type) {
 		case *ast.Ident:
-			selMap[t.Name] = ""
+			selMap[x.Name] = ""
 		case *ast.SelectorExpr:
-			if pkgIdent, ok := t.X.(*ast.Ident); ok {
-				selMap[t.Sel.Name] = pkgIdent.Name
-			}
-		case *ast.StarExpr:
-			switch x := t.X.(type) {
-			case *ast.Ident:
-				selMap[x.Name] = ""
-			case *ast.SelectorExpr:
-				if pkgIdent, ok := x.X.(*ast.Ident); ok {
-					selMap[x.Sel.Name] = pkgIdent.Name
-				}
+			if pkgIdent, ok := x.X.(*ast.Ident); ok {
+				selMap[x.Sel.Name] = pkgIdent.Name
 			}
 		}
 	}
+
 	return selMap
+}
+
+func hasFields(t types.Type) bool {
+	var st *types.Struct
+	switch tt := t.(type) {
+	case *types.Pointer:
+		e := tt.Elem()
+		st, _ = e.Underlying().(*types.Struct)
+	case *types.Named:
+		st, _ = tt.Underlying().(*types.Struct)
+	case *types.Struct:
+		st = tt
+	}
+	if st != nil {
+		return st.NumFields() > 0
+	}
+	return false
 }
 
 // func stripPkgPrefix(t types.Type) string {

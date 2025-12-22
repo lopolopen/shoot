@@ -14,7 +14,6 @@ func _() {
 	_ = x[ColorRed-1]
 	_ = x[ColorGreen-2]
 	_ = x[ColorBlue-3]
-
 }
 
 const _color_all = ColorRed | ColorGreen | ColorBlue | 0
@@ -77,7 +76,6 @@ func (c *Color) UnmarshalJSON(data []byte) error {
 	if err = json.Unmarshal(data, &s_); err != nil {
 		return fmt.Errorf("Color enum should be a string, got %s", data)
 	}
-
 	if v_, err = shoot.ParseEnum[Color](s_); err != nil {
 		return err
 	}
