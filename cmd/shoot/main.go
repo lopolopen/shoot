@@ -16,9 +16,10 @@ import (
 )
 
 var subCmdMap = map[string]string{
-	constructor.SubCmd: "[-opt] [-getset] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+	constructor.SubCmd: "[-opt] [-getset] [-json] [-exp] [-tagcase=<case>] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
 	enumer.SubCmd:      "[-json] [-text] -[bit] [-json] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
 	restclient.SubCmd:  "[-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
+	mapper.SubCmd:      "[-path=<path>] [-alias=<alias>] [-to=] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]",
 }
 
 func main() {
@@ -29,7 +30,12 @@ func main() {
 		log.Println(`These are all the sub commands supported as of now:`)
 		log.Println()
 
-		for _, sc := range []string{constructor.SubCmd, enumer.SubCmd} {
+		for _, sc := range []string{
+			constructor.SubCmd,
+			enumer.SubCmd,
+			restclient.SubCmd,
+			mapper.SubCmd,
+		} {
 			log.Printf("%s %s\n", sc, subCmdMap[sc])
 			log.Println()
 		}
