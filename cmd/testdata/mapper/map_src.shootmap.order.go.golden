@@ -2,7 +2,7 @@
 
 package mapper
 
-import "mappersample/mapper/dest"
+import "github.com/lopolopen/shoot/cmd/testdata/mapper/dest"
 
 // ToDest converts receiver to type dest.Order
 func (o *Order) ToDest() *dest.Order {

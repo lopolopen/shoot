@@ -13,6 +13,8 @@ package {{.PackageName}}
 
 {{if .DestPkgAlias}}
 import {{.DestPkgAlias}} "{{.DestPkgPath}}"
+{{else}}
+import "{{.DestPkgPath}}"
 {{end}}
 
 // {{$ToDest}} converts receiver to type {{.QualifiedDestTypeName}}
