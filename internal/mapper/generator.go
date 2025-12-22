@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/types"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -95,8 +96,17 @@ func (g *Generator) ParseFlags() {
 		}
 	}
 
+	dir := filepath.Join(g.CommonFlags().Dir, *path)
+	if !filepath.IsAbs(dir) && !strings.HasPrefix(dir, ".") {
+		dir = "./" + dir
+	}
+	_, err := os.Stat(dir)
+	if !(err == nil || os.IsExist(err)) {
+		logx.Fatalf("dest dir not exists: %s", dir)
+	}
+
 	g.flags = &Flags{
-		destDir:   *path,
+		destDir:   dir,
 		destTypes: typMap,
 		alias:     *alias,
 	}
@@ -117,7 +127,7 @@ func (g *Generator) LoadPackage() {
 		logx.Fatalf("%s", err)
 	}
 
-	//todo: each path has only one pkg
+	//todo: check that each path has only one pkg
 
 	pkg := pkgs[cwd]
 	if g.CommonFlags().FileName != "" {
@@ -172,6 +182,9 @@ func loadPkgs(cfg *packages.Config, patterns ...string) (map[string]*packages.Pa
 		for _, pkg := range pkgs {
 			if isPath {
 				absPat, _ := filepath.Abs(pat)
+				if !strings.HasSuffix(absPat, pkg.Name) {
+					continue
+				}
 				for _, f := range pkg.GoFiles {
 					absFile, _ := filepath.Abs(f)
 					rel, err := filepath.Rel(absPat, absFile)
@@ -208,17 +221,20 @@ func (g *Generator) MakeData(srcTypeName string) any {
 	}
 	g.data.DestTypeName = destTypeName
 
-	g.parseSrcFields(srcTypeName)
+	srcExists := g.parseSrcFields(srcTypeName)
+	if !srcExists {
+		logx.Fatalf("src type not exists: %s", srcTypeName)
+	}
 	destExists := g.parseDestFields(destTypeName)
 	if !destExists {
-		return nil
+		logx.Fatalf("dest type not exists: %s", destTypeName)
 	}
 	g.parseManual(srcTypeName, destTypeName)
 	mapperTypeName := g.loadTypeMapperPkg(srcTypeName)
 	if mapperTypeName != "" {
 		g.parseMapper(mapperTypeName)
-		g.makeMismatch() //priority: makeMismatch > makeMatch
 	}
+	g.makeMismatch() //priority: makeMismatch > makeMatch
 	g.makeMatch()
 
 	g.data.DestPkgName = g.destPkg.Name

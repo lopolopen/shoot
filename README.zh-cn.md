@@ -12,7 +12,7 @@ These are all the sub commands supported as of now:
 new [-opt] [-getset] [-json] [-exp] [-tagcase=<case>] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]
 enum [-json] [-text] -[bit] [-json][-type=<Type> | -file=<GoFile>] [dir] [-v]
 rest [-type=<Type> | -file=<GoFile>] [dir] [-v]
-map [-path=<path>] [-alias=<alias>] [-to=] [-type=<Type> | -file=<GoFile>] [dir] [-s] [-v]
+map [-path=<path>] [-alias=<alias>] [-to=<DestType>] [-type=<SrcType> | -file=<GoFile>] [dir] [-s] [-v]
 ```
 
 ## 使用 go1.24+ （推荐）

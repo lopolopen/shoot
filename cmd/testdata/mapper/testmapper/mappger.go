@@ -1,21 +1,21 @@
-package mapper
+package testmapper
 
 import (
 	"time"
 
-	"github.com/shopspring/decimal"
+	"github.com/lopolopen/shoot/cmd/testdata/mapper/dest"
 )
 
 type Mapper struct {
 	//shoot: map
 }
 
-func (Mapper) StringToDecimal(s string) decimal.Decimal {
-	return decimal.RequireFromString(s)
+func (Mapper) StringToDecimal(s string) dest.Decimal {
+	return dest.Decimal{}
 }
 
-func (Mapper) DecimalToString(d decimal.Decimal) string {
-	return d.String()
+func (Mapper) DecimalToString(d dest.Decimal) string {
+	return ""
 }
 
 func (Mapper) StringToTime(s string) time.Time {

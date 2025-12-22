@@ -8,7 +8,8 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
-func (g *Generator) parseSrcFields(srcTypeName string) {
+func (g *Generator) parseSrcFields(srcTypeName string) bool {
+	srcExists := false
 	g.tagMap = make(map[string]string)
 
 	ptrTypeMap := make(map[string]string)
@@ -28,16 +29,20 @@ func (g *Generator) parseSrcFields(srcTypeName string) {
 				return true
 			}
 
+			srcExists = true
 			g.extractExportedTopFiels(g.Pkg(), st, ptrTypeMap, &exportedFields)
 			return false
 		})
 	}
-
+	if !srcExists {
+		return false
+	}
 	g.srcPtrTypeMap = ptrTypeMap
 	g.exportedFields = exportedFields
 	for _, f := range exportedFields {
 		g.data.SrcFieldList = append(g.data.SrcFieldList, f.name)
 	}
+	return true
 }
 
 func (g *Generator) parseDestFields(destTypeName string) bool {
@@ -51,8 +56,6 @@ func (g *Generator) parseDestFields(destTypeName string) bool {
 				return true
 			}
 
-			destExists = true
-
 			ts, ok := n.(*ast.TypeSpec)
 			if !ok {
 				return true
@@ -62,13 +65,17 @@ func (g *Generator) parseDestFields(destTypeName string) bool {
 				return true
 			}
 
+			destExists = true
 			g.extractExportedTopFiels(g.destPkg, st, ptrTypeMap, &exportedFields)
 			return false
 		})
 	}
+	if !destExists {
+		return false
+	}
 	g.destExportedFields = exportedFields
 	g.destPtrTypeMap = ptrTypeMap
-	return destExists
+	return true
 }
 
 func getMapTag(tag string) string {

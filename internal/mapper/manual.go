@@ -13,9 +13,6 @@ func (g *Generator) parseManual(srcTypeName, destTypeName string) []string {
 	g.writeSrcSet = make(map[string]bool)
 	g.writeDestSet = make(map[string]bool)
 
-	// g.readSrcMap = make(map[string]string)
-	// g.writeSrcMap = make(map[string]string)
-
 	pkg := g.Pkg()
 	for _, f := range pkg.Syntax {
 		ast.Inspect(f, func(n ast.Node) bool {

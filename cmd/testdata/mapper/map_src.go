@@ -1,11 +1,30 @@
 package mapper
 
-import "github.com/lopolopen/shoot/cmd/testdata/mapper/mapper"
+import "github.com/lopolopen/shoot/cmd/testdata/mapper/testmapper"
 
 type Order struct {
-	*mapper.Mapper
-	ID           string        `json:"id"`
-	Amount       string        `json:"amount"`
-	OrderingTime string        `json:"orderingTime" map:"OrderTime"`
-	Address      *OrderAddress `json:"address"`
+	*testmapper.Mapper
+	ID           string
+	Amount       string
+	OrderingTime string `map:"OrderTime"`
+	Address      *OrderAddress
+}
+
+type OrderAddress struct {
+	City string
+}
+
+type Src struct {
+	*Embed
+	ID      int
+	SrcName string `map:"DestName"`
+}
+
+type Embed struct {
+	ID int
+	*EmbedEmbed
+}
+
+type EmbedEmbed struct {
+	X string
 }

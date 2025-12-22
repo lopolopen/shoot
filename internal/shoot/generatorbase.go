@@ -17,7 +17,7 @@ import (
 
 type GeneratorBase struct {
 	commonFlags *CommonFlags
-	_pkg        *Package
+	_pkg        *Package //todo: refactor
 	subCmd      string
 	tmplTxt     string
 	tmp         *template.Template
