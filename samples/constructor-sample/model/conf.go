@@ -1,6 +1,6 @@
 package model
 
-//go:generate go tool shoot new -getset -opt -type=Conf
+//-go:generate go tool shoot new -getset -opt -type=Conf
 
 type Conf struct {
 	//shoot: new

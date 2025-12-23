@@ -146,6 +146,24 @@ func (u *User) UnmarshalJSON(data []byte) error {
 // ShootNew exists solely to fulfill the NewShooter interface contract
 func (u User) ShootNew() { /*noop*/ }
 
+// UserGetter is read-only interface for User type
+type UserGetter interface {
+	Id() string
+	Name() string
+	Gender() int
+	Age() int
+	Tel() string
+}
+
+// UserSetter is write-only interface for User type
+type UserSetter interface {
+	SetId(string)
+	SetName(string)
+	SetGender(int)
+	SetAge(int)
+	SetTel(string)
+}
+
 // NewBook constructs a new instance of type Book
 func NewBook(name string) *Book {
 	return &Book{
@@ -258,6 +276,20 @@ func (b *Book) UnmarshalJSON(data []byte) error {
 
 // ShootNew exists solely to fulfill the NewShooter interface contract
 func (b Book) ShootNew() { /*noop*/ }
+
+// BookGetter is read-only interface for Book type
+type BookGetter interface {
+	Name() string
+	Writers() []string
+	Owner() *User
+}
+
+// BookSetter is write-only interface for Book type
+type BookSetter interface {
+	SetName(string)
+	SetWriters([]string)
+	SetOwner(*User)
+}
 
 // NewAddress constructs a new instance of type Address
 func NewAddress(province string, city string, district string, street string) *Address {
