@@ -52,9 +52,9 @@ type TmplData struct {
 	WriteMethodName string //toModel
 }
 
-func NewTmplData(cmdline string) *TmplData {
+func NewTmplData(cmdline, version string) *TmplData {
 	return &TmplData{
-		TmplDataBase: shoot.NewTmplDataBase(cmdline),
+		TmplDataBase: shoot.NewTmplDataBase(cmdline, version),
 	}
 }
 

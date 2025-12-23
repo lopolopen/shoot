@@ -21,25 +21,25 @@ type Golden struct {
 
 var goldens_new = []Golden{
 	// {
-	// 	cmd: "shoot new -getset -type=User ./notexists -v",
+	// 	cmd: "shoot new -getset -type=User ./notexists",
 	// 	names: []string{
 	// 		"new_getset.go.user.go",
 	// 	},
 	// },
 	{
-		cmd: "shoot new -getset -type=User ./testdata/constructor",
+		cmd: "shoot new -getset -type=User",
 		names: []string{
 			"new_getset.shootnew.user.go",
 		},
 	},
 	{
-		cmd: "shoot new -opt -type=Conf ./testdata/constructor",
+		cmd: "shoot new -opt -type=Conf",
 		names: []string{
 			"new_opt.shootnew.conf.go",
 		},
 	},
 	{
-		cmd: "shoot new -file=new_file.go ./testdata/constructor",
+		cmd: "shoot new -file=new_file.go",
 		names: []string{
 			"new_file.shootnew.go",
 		},
@@ -48,17 +48,17 @@ var goldens_new = []Golden{
 
 var goldens_enum = []Golden{
 	{
-		cmd:   "shoot enum -bit -file=nothing.go ./testdata/enumer",
+		cmd:   "shoot enum -bit -file=nothing.go",
 		names: []string{},
 	},
 	{
-		cmd: "shoot enum -bit -type=FormatStyle ./testdata/enumer",
+		cmd: "shoot enum -bit -type=FormatStyle",
 		names: []string{
 			"enum_bit.shootenum.formatstyle.go",
 		},
 	},
 	{
-		cmd: "shoot enum -json -type=Color ./testdata/enumer",
+		cmd: "shoot enum -json -type=Color",
 		names: []string{
 			"enum_json.shootenum.color.go",
 		},
@@ -67,7 +67,7 @@ var goldens_enum = []Golden{
 
 var goldens_rest = []Golden{
 	{
-		cmd: "shoot rest -type=Client ./testdata/restclient",
+		cmd: "shoot rest -type=Client",
 		names: []string{
 			"rest.shootrest.client.go",
 		},
@@ -76,13 +76,13 @@ var goldens_rest = []Golden{
 
 var goldens_map = []Golden{
 	{
-		cmd: "shoot map -path=./dest -type=Order ./testdata/mapper",
+		cmd: "shoot map -path=./dest -type=Order",
 		names: []string{
 			"map_src.shootmap.order.go",
 		},
 	},
 	{
-		cmd: "shoot map -path=./dest -alias=target -to=Dest -type=Src ./testdata/mapper",
+		cmd: "shoot map -path=./dest -alias=target -to=Dest -type=Src",
 		names: []string{
 			"map_src.shootmap.src.go",
 		},
@@ -90,12 +90,13 @@ var goldens_map = []Golden{
 }
 
 func TestShootNew_Golden(t *testing.T) {
+	const dir = "./testdata/constructor"
 	g := goldie.New(t,
-		goldie.WithFixtureDir("testdata/constructor"),
+		goldie.WithFixtureDir(dir),
 	)
 
 	for _, test := range goldens_new {
-		srcMap := generate(test, constructor.New())
+		srcMap := generate(test, constructor.New(), dir)
 
 		for _, name := range test.names {
 			got, ok := srcMap[name]
@@ -112,12 +113,13 @@ func TestShootNew_Golden(t *testing.T) {
 }
 
 func TestShootEnum_Golden(t *testing.T) {
+	const dir = "./testdata/enumer"
 	g := goldie.New(t,
-		goldie.WithFixtureDir("testdata/enumer"),
+		goldie.WithFixtureDir(dir),
 	)
 
 	for _, test := range goldens_enum {
-		srcMap := generate(test, enumer.New())
+		srcMap := generate(test, enumer.New(), dir)
 
 		if len(srcMap) != len(test.names) {
 			t.Errorf("expected count: %d, got: %d", len(test.names), len(srcMap))
@@ -138,12 +140,13 @@ func TestShootEnum_Golden(t *testing.T) {
 }
 
 func TestShootRest_Golden(t *testing.T) {
+	const dir = "./testdata/restclient"
 	g := goldie.New(t,
-		goldie.WithFixtureDir("testdata/restclient"),
+		goldie.WithFixtureDir(dir),
 	)
 
 	for _, test := range goldens_rest {
-		srcMap := generate(test, restclient.New())
+		srcMap := generate(test, restclient.New(), dir)
 
 		if len(srcMap) != len(test.names) {
 			t.Errorf("expected count: %d, got: %d", len(test.names), len(srcMap))
@@ -164,12 +167,13 @@ func TestShootRest_Golden(t *testing.T) {
 }
 
 func TestShootMap_Golden(t *testing.T) {
+	const dir = "./testdata/mapper"
 	g := goldie.New(t,
-		goldie.WithFixtureDir("testdata/mapper"),
+		goldie.WithFixtureDir(dir),
 	)
 
 	for _, test := range goldens_map {
-		srcMap := generate(test, mapper.New())
+		srcMap := generate(test, mapper.New(), dir)
 
 		if len(srcMap) != len(test.names) {
 			t.Errorf("expected count: %d, got: %d", len(test.names), len(srcMap))
@@ -189,8 +193,9 @@ func TestShootMap_Golden(t *testing.T) {
 	}
 }
 
-func generate(test Golden, g shoot.Generator) map[string][]byte {
-	os.Args = strings.Split(test.cmd, " ")
+func generate(test Golden, g shoot.Generator, dir string) map[string][]byte {
+	os.Args = strings.Fields(test.cmd)
+	os.Args = append(os.Args, "-version=test", dir)
 	flag.Parse()
 
 	g.ParseFlags()

@@ -1,7 +1,19 @@
-.PHONY: test
+.PHONY: test release
 
-test:
+golden:
 	go test ./cmd
 
-testup:
+goldenup:
 	go test ./cmd -update
+
+generate:
+	go generate ./...
+
+test:
+	go test ./...
+
+release: test
+	sed -i '' "s/Version = \"v[^\"]*\"/Version = \"${tag}\"/" ./internal/shoot/consts.go
+	git add -A
+	git commit -m"tag: ${tag}"
+	git tag ${tag}

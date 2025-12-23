@@ -34,7 +34,10 @@ func (g *Generator) ParseFlags() {
 }
 
 func (g *Generator) MakeData(typeName string) any {
-	g.data = NewTmplData(g.CommonFlags().CmdLine)
+	g.data = NewTmplData(
+		g.CommonFlags().CmdLine,
+		g.CommonFlags().Version,
+	)
 	g.cookClient(typeName)
 	g.data.SetTypeName(typeName)
 	g.data.SetPackageName(g.Package().Name())

@@ -208,7 +208,10 @@ func loadPkgs(cfg *packages.Config, patterns ...string) (map[string]*packages.Pa
 }
 
 func (g *Generator) MakeData(srcTypeName string) any {
-	g.data = NewTmplData(g.CommonFlags().CmdLine)
+	g.data = NewTmplData(
+		g.CommonFlags().CmdLine,
+		g.CommonFlags().Version,
+	)
 
 	var destTypeName string
 	if g.flags.destTypes != nil {

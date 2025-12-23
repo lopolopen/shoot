@@ -26,9 +26,9 @@ type TmplData struct {
 	BodyHTTPMethods []string
 }
 
-func NewTmplData(cmdline string) *TmplData {
+func NewTmplData(cmdline, version string) *TmplData {
 	return &TmplData{
-		TmplDataBase: shoot.NewTmplDataBase(cmdline),
+		TmplDataBase: shoot.NewTmplDataBase(cmdline, version),
 	}
 }
 

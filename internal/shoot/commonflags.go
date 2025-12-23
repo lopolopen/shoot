@@ -8,4 +8,5 @@ type CommonFlags struct {
 	Separate  bool
 	TypeNames []string
 	FileName  string
+	Version   string
 }
