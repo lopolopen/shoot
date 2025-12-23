@@ -94,6 +94,8 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 	v := sub.Bool("v", false, "verbose output (alias for verbose)")
 	raw := sub.Bool("raw", false, "raw source")
 	r := sub.Bool("r", false, "raw source (alias for raw)")
+	version := sub.String("version", "", "pin version")
+	ver := sub.String("ver", "", "pin version (alias for version)")
 
 	cmdline := Shoot + " " + strings.Join(flag.Args(), " ") //e.g.: enum -bit type=YourType ./testdata
 	sub.Parse(flag.Args()[1:])
@@ -128,6 +130,12 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 		}
 	}
 
+	if *version != "" {
+		*ver = *version
+	} else if *ver == "" {
+		*ver = Version
+	}
+
 	g.commonFlags = &CommonFlags{
 		CmdLine:   cmdline,
 		TypeNames: types,
@@ -136,6 +144,7 @@ func (g *GeneratorBase) ParseCommonFlags(sub *flag.FlagSet) {
 		Dir:       dir,
 		Verbose:   *v || *verbose,
 		Raw:       *r || *raw,
+		Version:   *ver,
 	}
 }
 

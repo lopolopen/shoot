@@ -46,7 +46,10 @@ func (g *Generator) ParseFlags() {
 }
 
 func (g *Generator) MakeData(typeName string) any {
-	g.data = NewTmplData(g.CommonFlags().CmdLine)
+	g.data = NewTmplData(
+		g.CommonFlags().CmdLine,
+		g.CommonFlags().Version,
+	)
 	g.makeStr(typeName)
 	g.makeBitwize()
 	g.makeJson()
