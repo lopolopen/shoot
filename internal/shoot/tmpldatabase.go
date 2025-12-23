@@ -2,13 +2,15 @@ package shoot
 
 type TmplDataBase struct {
 	CmdLine     string
+	Version     string
 	PackageName string
 	TypeName    string
 }
 
-func NewTmplDataBase(cmdline string) *TmplDataBase {
+func NewTmplDataBase(cmdline, version string) *TmplDataBase {
 	d := &TmplDataBase{
 		CmdLine: cmdline,
+		Version: version,
 	}
 	return d
 }

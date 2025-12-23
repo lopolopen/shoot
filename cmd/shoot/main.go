@@ -53,6 +53,9 @@ func main() {
 
 	var g shoot.Generator
 	switch subCmd {
+	case "version":
+		fmt.Println(shoot.Version)
+		os.Exit(0)
 	case constructor.SubCmd:
 		g = constructor.New()
 	case enumer.SubCmd:

@@ -1,4 +1,4 @@
-//go:generate go run github.com/lopolopen/shoot/cmd/shoot new -getset -file=$GOFILE
+//go:generate go run github.com/lopolopen/shoot/cmd/shoot new -getset -file=$GOFILE -ver=v0.0.0
 package shoot
 
 import (
