@@ -63,7 +63,7 @@ func (g *Generator) makeGetSet(typeName string) {
 func parseGetSet(doc string) (bool, bool) {
 	regGet := regexp.MustCompile(`(?im)^shoot:.*?\Wget(;.*|\s*)$`)
 	regSet := regexp.MustCompile(`(?im)^shoot:.*?\Wset(;.*|\s*)$`)
-	get := regGet.Match([]byte(doc))
-	set := regSet.Match([]byte(doc))
+	get := regGet.MatchString(doc)
+	set := regSet.MatchString(doc)
 	return get, set
 }

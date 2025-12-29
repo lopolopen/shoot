@@ -114,7 +114,7 @@ func buildImports(imports []*ast.ImportSpec) string {
 
 func parseNew(doc string) bool {
 	regNew := regexp.MustCompile(`(?im)^shoot:.*?\Wnew(;.*|\s*)$`)
-	new := regNew.Match([]byte(doc))
+	new := regNew.MatchString(doc)
 	return new
 }
 
