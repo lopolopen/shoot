@@ -23,6 +23,7 @@ var subCmdMap = map[string]string{
 }
 
 func main() {
+	logx.Pin(os.Args)
 	log.SetFlags(0)
 	flag.Usage = func() {
 		log.Println(`Usage: shoot <subcommand> [options]`)
